@@ -1,0 +1,14 @@
+#!/bin/sh
+
+DEVICE=${1:-"/dev/sdb"}
+
+grep "^$DEVICE" /proc/mounts && { echo "$DEVICE mounted, aborting."; exit 1; }
+
+sfdisk -L -q /dev/sdb << EOF
+,,L
+EOF
+
+mkfs.ext4 -L "wibed-usb-overlay" /dev/sdb1
+
+exit 0
+

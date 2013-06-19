@@ -1,0 +1,13 @@
+#Added by wibed system
+config global automount
+    option from_fstab 1
+    option anon_mount 0
+
+config mount
+    option target   /overlay
+    option device   'wibed-usb-overlay'
+    option fstype   ext4
+    option options  rw,noatime,nodiratime
+    option enabled  1
+    option enabled_fsck 1
+
