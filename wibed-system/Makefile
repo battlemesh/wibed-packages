@@ -19,13 +19,13 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=wibed-system
 PKG_RELEASE:=1
-#PKG_SOURCE_URL:=@SF/confine-init-system
+#PKG_SOURCE_URL:=@SF/wibed-system
 #PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_BUILD_DIR := $(BUILD_DIR)/$(PKG_NAME)
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/confine-init-system
+define Package/wibed-system
   SECTION:=net
   CATEGORY:=Base system
   TITLE:=Basic system requirements for Wibed
@@ -34,7 +34,6 @@ define Package/confine-init-system
 	+usbutils +sfdisk +e2fsprogs +sysfsutils \
 	\
 	+kmod-usb-storage +kmod-usb-uhci +kmod-usb2 +kmod-usb-ohci +kmod-usb-core \
-	+kmod-usb-hid +kmod-hid +kmod-input-core \
 	\
 	+kmod-dummy +kmod-fs-vfat +kmod-fs-ext4
 
@@ -44,11 +43,11 @@ define optional
 
 endef
 
-define Package/confine-init-system/description
+define Package/wibed-system/description
 	minimal system requirements for Wibed
 endef
 
-define Package/confine-init-system/conffiles
+define Package/wibed-system/conffiles
 
 endef
 
@@ -62,7 +61,7 @@ endef
 define Build/Compile
 endef
 
-define Package/confine-init-system/install
+define Package/wibed-system/install
 	$(INSTALL_DIR) $(1)/etc
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
@@ -76,5 +75,5 @@ define Package/confine-init-system/install
 endef
 
 
-$(eval $(call BuildPackage,confine-init-system))
+$(eval $(call BuildPackage,wibed-system))
 
