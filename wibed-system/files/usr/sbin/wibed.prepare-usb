@@ -2,13 +2,15 @@
 
 DEVICE=${1:-"/dev/sdb"}
 
-grep "^$DEVICE" /proc/mounts && { echo "$DEVICE mounted, aborting."; exit 1; }
+[ -b $DEVICE ] || { echo "$DEVICE could not be found. Aborting."; exit 1; }
 
-sfdisk -L -q /dev/sdb << EOF
+grep ^$DEVICE /proc/mounts && { echo "$DEVICE mounted. Aborting."; exit 2; }
+
+sfdisk -L -q $DEVICE << EOF
 ,,L
 EOF
 
-mkfs.ext4 -L "wibed-usb-overlay" /dev/sdb1
+mkfs.ext4 -L "wibed-usb-overlay" ${DEVICE}1 || { echo "Partitioning $DEVICE failed."; exit 3; }
 
 exit 0
 
