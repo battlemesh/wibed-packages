@@ -1,16 +1,20 @@
-#!/bin/sh
+#!/bin/sh set -ex
 
-DEVICE=${1:-"/dev/sdb"}
+DEVICE=${1:-"/dev/sda"}
 
 [ -b $DEVICE ] || { echo "$DEVICE could not be found. Aborting."; exit 1; }
 
 grep ^$DEVICE /proc/mounts && { echo "$DEVICE mounted. Aborting."; exit 2; }
 
+blkid | grep ${DEVICE}1.*wibed-overlay && { echo "${DEVICE} already contains a wibed overlay partition."; exit 3; }
+
+dd if=/dev/zero of=$DEVICE bs=512 count=2
+
 sfdisk -L -q $DEVICE << EOF
 ,,L
 EOF
 
-mkfs.ext4 -L "wibed-usb-overlay" ${DEVICE}1 || { echo "Partitioning $DEVICE failed."; exit 3; }
+mkfs.ext4 -L wibed-overlay ${DEVICE}1 || { echo "Partitioning $DEVICE failed."; exit 3; }
 
 exit 0
 

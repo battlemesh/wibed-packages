@@ -5,7 +5,7 @@ config global automount
 
 config mount
     option target   /overlay
-    option device   'wibed-usb-overlay'
+    option device   wibed-overlay
     option fstype   ext4
     option options  rw,noatime,nodiratime
     option enabled  1

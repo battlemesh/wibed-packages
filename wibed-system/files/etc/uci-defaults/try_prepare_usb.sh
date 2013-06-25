@@ -1,5 +1,7 @@
 #!/bin/sh
 
-for device in sdb sdc sde sdf; do
-    [ -b /dev/$device ] || continue
+for device in sda sdb sdc; do
+    if [ -b /dev/$device ]; then
+        continue
+    fi
 done
