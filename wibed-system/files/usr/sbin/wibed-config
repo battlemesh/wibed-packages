@@ -14,6 +14,35 @@ local function node_id()
 	return math.floor(hash / 256), hash % 256
 end
 
+local function shell(cmd, raw)
+	local f = assert(io.popen(cmd, 'r'))
+	local s = assert(f:read('*a'))
+	f:close()
+	if raw then return s end
+	s = string.gsub(s, '^%s+', '')
+	s = string.gsub(s, '%s+$', '')
+	s = string.gsub(s, '[\n\r]+', ' ')
+	return s
+end
+
+local function readfile(file)
+	local f = io.open(file,"r")
+	local content = nil
+	if f ~= nil then
+		content = f:read('*a')
+		f:close()
+	end
+	return content
+end
+
+local function get_model()
+	local model = readfile("/tmp/sysinfo/board_name")
+	if model == nil then
+		model = shell("uname -m",true).."-"..shell("uname -p",true)
+	end
+	return model
+end
+
 local function generate_address()
 	local r1, r2 = node_id()
 	local ipv4_template = assert(x:get(ucic, "management", "ipv4_net"))
@@ -34,19 +63,6 @@ end
 
 local function get_bssid()
 	return x:get(ucic, "management","bssid") or "02:CA:FF:EE:BA:BE"
-end
-
-local function set_hostname()
-	local r1, r2 = node_id()
-	local hostname = string.format("wibed-%02x%02x", r1, r2)
-
-	x:foreach("system", "system", function(s)
-		x:set("system", s[".name"], "hostname", hostname)
-	end)
-	x:save("system")
-	x:commit("system")
-
-	fs.writefile("/proc/sys/kernel/hostname", hostname)
 end
 
 local function printf(fmt, ...)
@@ -134,22 +150,38 @@ local function set_mgmt_net()
 	x:set("network", "mgmt_rescue", "ifname", "br-mgmt")
 end
 
+local function set_system()
+	print("Configuring system...")
+	-- Setting hostname
+	local r1, r2 = node_id()
+	local hostname = string.format("wibed-%02x%02x", r1, r2)
+
+	x:foreach("system", "system", function(s)
+		x:set("system", s[".name"], "hostname", hostname)
+	end)
+
+	fs.writefile("/proc/sys/kernel/hostname", hostname)
+
+	-- Setting model name
+	x:set(ucic,"upgrade","model",get_model())
+	x:set(ucic,"general","status","1")
+	x:set(ucic,"general","node_id",hostname)
+end
+
+
 local function clean()
 	print("Clearing wireless config...")
 	x:foreach("wireless", "wifi-iface", function(s) x:delete("wireless", s[".name"]) end)
 
 	print("Clearing network config...")
 	x:foreach("network", "interface", function(s)
-		if s[".name"]:match("^mgmt$") or s[".name"]:match("^lan_") then
+		if s[".name"]:match("^mgmt") or s[".name"]:match("^lan") or s[".name"]:match("^bat_") then
 			x:delete("network", s[".name"])
 		end
 	end)
+	
 	x:foreach("network", "switch_vlan", function(s) x:delete("network", s[".name"]) end)
 	x:foreach("network", "switch", function(s) x:delete("network", s[".name"]) end)
-	x:delete("network", "wan")
-	x:delete("network", "wan6")
-	x:delete("network", "mgmt")
-	x:delete("network", "lan")
 end
 
 local function exec_hooks()
@@ -217,25 +249,24 @@ local function set_mgmt_wifi()
 end
 
 function main()
-	local r1, r2 = node_id()
-	local batch = { }
-
 	reset_wifi()
 	clean()
-
 	set_mgmt_net()
 	set_mgmt_wifi()
+	set_system()
 
 	print("Committing config files...")
 	x:save("network")
 	x:save("batman-adv")
+	x:save(ucic)
+	x:save("system")
 	x:save("wireless")
 	x:commit("network")
 	x:commit("batman-adv")
 	x:commit("wireless")
-
-	print("Configuring system...")
-	set_hostname()
-end
+	x:commit(ucic)
+	x:commit("system")
+	
+	end
 
 main()
