@@ -56,24 +56,39 @@ local function printr(r)
 	end
 end
 
-local function split_ifaces(ifaces)
-	local _,i,r
-	local et = {}
-	local wi = {}
-	for _,i in ipairs(ifaces) do
-		r = os.execute(string.format("ls /sys/class/net/%s/phy80211/ >/dev/null 2>&1",i))
-		if r == 0 then table.insert(wi,i)
-		else table.insert(et,i) 
-		end
-	end
-	return et,wi
+local function is_net(dev)
+	local r = os.execute(string.format("ls /sys/class/net/%s >/dev/null 2>&1",dev))
+	return r==0
+end
+
+local function is_wifi(dev)
+	local r = os.execute(string.format("ls /sys/class/net/%s/phy80211/ >/dev/null 2>&1",i))
+	return r==0
 end
 
 local function reset_wifi()
 	print("Reconfiguring wifi devices...")
 	os.execute('echo "" > /etc/config/wireless')
-	os.execute('wifi detect | grep -v disable > /etc/config/wireless')
-	os.execute('wifi >/dev/null 2>&1')
+	os.execute('wifi detect > /etc/config/wireless')
+end
+
+local function wifi_up()
+	os.execute("wifi")
+end
+
+local function split_ifaces(ifaces)
+	local _,i
+	local et = {}
+	local wi = {}
+	for _,i in ipairs(ifaces) do
+		if x:get("wireless",i) == "wifi-device" then
+			table.insert(wi,i)
+		else if is_net(i) then
+			table.insert(et,i)
+		 	end
+		end
+	end
+	return et,wi
 end
 
 local function set_mgmt_net()
@@ -93,7 +108,7 @@ local function set_mgmt_net()
 	x:set("network", "mgmt_rescue", "proto", "static")
 	x:set("network", "mgmt_rescue", "ipaddr", "192.168.1.1")
 	x:set("network", "mgmt_rescue", "netmask", "255.255.255.0")
-	x:set("network", "mgmt_rescue", "ifname", "br-lan")
+	x:set("network", "mgmt_rescue", "ifname", "br-mgmt")
 end
 
 local function clean()
@@ -112,7 +127,6 @@ local function clean()
 	x:delete("network", "wan6")
 	x:delete("network", "mgmt")
 	x:delete("network", "lan")
-
 end
 
 local function exec_hooks()
@@ -131,50 +145,48 @@ local function set_mgmt_wifi()
 	print("Configuring management wifi devices")
 	local channel5 = assert(x:get(ucic, "management", "channel5"))
 	local ch = assert(x:get(ucic, "management", "channel2"))
-	local wifi_num = 1
+	local i
 	local _,ifaces = split_ifaces(x:get(ucic, "management", "ifaces"))	
+	local wifi_num = 0
 
-	x:foreach("wireless", "wifi-device", function(s)
-		local t = iw.type(s[".name"])
-		if not t then return end
-
-		local is_5ghz = iw[t].hwmodelist(s[".name"]).a
-
-		if is_5ghz then ch=channel5 end
-
+	for _,i in ipairs(ifaces) do
 		local id = string.format("mgmt%d", wifi_num)
 		local net = "mgmt"
-		local ifn = string.format("mgmt%d", wifi_num)
 
-		if not ch then
-			printf("-> No channel defined for %dGHz %s", is_5ghz and 5 or 2, s[".name"])
-			return
-		end
+		local t = iw.type(i)
+		if t then
+			local is_5ghz = iw[t].hwmodelist(i).a
 
-		local ht = ch:match("[-+]?$")
-
-		printf("-> Using channel %s for %dGHz %s", ch, is_5ghz and 5 or 2, s[".name"])
-		x:set("wireless", s[".name"], "channel", (ch:gsub("[-+]$", "")))
-
-		if x:get("wireless", s[".name"], "ht_capab") then
-			if ht == "+" or ht == "-" then
-				x:set("wireless", s[".name"], "htmode", "HT40"..ht)
-			else
-				x:set("wireless", s[".name"], "htmode", "HT20")
+			if is_5ghz then ch=channel5 end
+			if not ch then
+				printf("-> No channel defined for %dGHz %s", is_5ghz and 5 or 2, i)
+				return
 			end
-		end
-
-		x:set("wireless", s[".name"], "disabled", 0)
-		x:set("wireless", id, "wifi-iface")
-		x:set("wireless", id, "device", s[".name"])
-		x:set("wireless", id, "network", net)
-		x:set("wireless", id, "ifname", ifn)
-
-		wifi_num = wifi_num + 1
-		
-	end)
-
-
+	
+			local ht = ch:match("[-+]?$")
+	
+			printf("-> Using channel %s for %dGHz %s", ch, is_5ghz and 5 or 2, i)
+			x:set("wireless", i, "channel", (ch:gsub("[-+]$", "")))
+	
+			if x:get("wireless", i, "ht_capab") then
+				if ht == "+" or ht == "-" then
+					x:set("wireless", i, "htmode", "HT40"..ht)
+				else
+					x:set("wireless", i, "htmode", "HT20")
+				end
+			end
+	
+			x:set("wireless", i, "disabled", 0)
+			x:set("wireless", id, "wifi-iface")
+			x:set("wireless", id, "device", i)
+			x:set("wireless", id, "network", net)
+			x:set("wireless", id, "mode", "adhoc")
+			x:set("wireless", id, "ifname", id)
+	
+			wifi_num = wifi_num + 1
+			else printf("-> Error, device %s not found as WiFi interface", i)
+		end	
+	end
 end
 
 function main()
@@ -183,7 +195,7 @@ function main()
 
 	reset_wifi()
 	clean()
-	
+
 	set_mgmt_net()
 	set_mgmt_wifi()
 
