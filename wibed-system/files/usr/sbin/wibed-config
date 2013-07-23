@@ -62,7 +62,7 @@ local function is_net(dev)
 end
 
 local function is_wifi(dev)
-	local r = os.execute(string.format("ls /sys/class/net/%s/phy80211/ >/dev/null 2>&1",i))
+	local r = os.execute(string.format("ls /sys/class/net/%s/phy80211/ >/dev/null 2>&1",dev))
 	return r==0
 end
 
@@ -91,9 +91,23 @@ local function split_ifaces(ifaces)
 	return et,wi
 end
 
+local function set_batadv(dev)
+	local ifn = "bat_"..dev
+	x:set("batman-adv","bat0","mesh")
+	x:set("batman-adv","bat0","bridge_loop_avoidance","1")
+	x:set("network",ifn,"interface")
+	x:set("network",ifn,"ifname",dev)
+	x:set("network",ifn,"proto","batadv")
+	x:set("network",ifn,"mesh","bat0")
+	if is_wifi(dev) then
+		x:set("network",ifn,"mtu","1528")
+	end
+end
+
 local function set_mgmt_net()
 	print("Configuring management network devices")
 	local ifaces,_ = split_ifaces(x:get(ucic, "management", "ifaces"))
+	table.insert(ifaces,"bat0")
 	local ipv4, ipv6 = generate_address()
 
 	x:set("network", "mgmt", "interface")
@@ -103,6 +117,10 @@ local function set_mgmt_net()
 	x:set("network", "mgmt", "netmask", "255.255.0.0")
 	x:set("network", "mgmt", "ip6addr", ipv6)
 	x:set("network", "mgmt", "ifname", ifaces)
+	
+	x:set("network", "mgmt_dyn", "interface")
+	x:set("network", "mgmt_dyn", "proto", "dhcp")
+	x:set("network", "mgmt_dyn", "ifname", "br-mgmt")
 	
 	x:set("network", "mgmt_rescue", "interface")
 	x:set("network", "mgmt_rescue", "proto", "static")
@@ -151,7 +169,7 @@ local function set_mgmt_wifi()
 
 	for _,i in ipairs(ifaces) do
 		local id = string.format("mgmt%d", wifi_num)
-		local net = "mgmt"
+		local net = "bat_"..id
 
 		local t = iw.type(i)
 		if t then
@@ -182,6 +200,8 @@ local function set_mgmt_wifi()
 			x:set("wireless", id, "network", net)
 			x:set("wireless", id, "mode", "adhoc")
 			x:set("wireless", id, "ifname", id)
+
+			set_batadv(id)
 	
 			wifi_num = wifi_num + 1
 			else printf("-> Error, device %s not found as WiFi interface", i)
@@ -201,8 +221,10 @@ function main()
 
 	print("Committing config files...")
 	x:save("network")
+	x:save("batman-adv")
 	x:save("wireless")
 	x:commit("network")
+	x:commit("batman-adv")
 	x:commit("wireless")
 
 	print("Configuring system...")
