@@ -8,7 +8,7 @@ local ucic = "wibed"
 local x = uci:cursor()
 
 local function node_id()
-	local dev = assert(x:get("wbm", "network", "primary_dev"))
+	local dev = "eth0"
 	local mac = assert(fs.readfile("/sys/class/net/"..dev.."/address"))
 	local hash = crc.hash(mac)
 	return math.floor(hash / 256), hash % 256
@@ -30,6 +30,10 @@ local function generate_ssid()
 	local id = assert(x:get(ucic, "management", "ssid"))
 	local r1, r2 = node_id()
 	return string.format("%s-%02x%02x", id, r1, r2)
+end
+
+local function get_bssid()
+	return x:get(ucic, "management","bssid") or "02:CA:FF:EE:BA:BE"
 end
 
 local function set_hostname()
@@ -92,6 +96,7 @@ local function split_ifaces(ifaces)
 end
 
 local function set_batadv(dev)
+	printf("-> Configuring batman-adv for %s ",dev)
 	local ifn = "bat_"..dev
 	x:set("batman-adv","bat0","mesh")
 	x:set("batman-adv","bat0","bridge_loop_avoidance","1")
@@ -196,6 +201,8 @@ local function set_mgmt_wifi()
 	
 			x:set("wireless", i, "disabled", 0)
 			x:set("wireless", id, "wifi-iface")
+			x:set("wireless", id, "ssid", generate_ssid())
+			x:set("wireless", id, "bssid", get_bssid())
 			x:set("wireless", id, "device", i)
 			x:set("wireless", id, "network", net)
 			x:set("wireless", id, "mode", "adhoc")

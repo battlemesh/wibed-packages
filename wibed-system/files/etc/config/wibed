@@ -20,11 +20,11 @@ config wibed upgrade
 
 config wibed management
     list ifaces 'eth0'			
-    list ifaces 'wlan0'
-    option channel5 '36'			# <int> Wireless channel (in the 5GHz band)
-    option channel2 '1'				# <int> Wireless channel (in the 2.4GHz band)
-    option bssid '00:C0:FF:EE:C0:DE'		# <hex string> MAC address (which?)
-    option ssid 'wibed'				# <string> Wireless Identificator string
+    list ifaces 'radio1'
+    option channel5 '36'						# <int> Wireless channel (in the 5GHz band)
+    option channel2 '1'							# <int> Wireless channel (in the 2.4GHz band)
+    option bssid '02:C0:FF:EE:C0:DE'			# <hex string> MAC address (which?)
+    option ssid 'wibed'							# <string> Wireless Identificator string
     option ipv4_net '10.99.R1.R2/16' 
     option ipv6_net 'fdba:99:R1R2::1/64'
 
