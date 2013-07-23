@@ -1,30 +1,30 @@
-# SAMPLE WIBED CONFIGURATION
 
 config wibed general
     option node_id '00ff'                       # <INT hex> Based on CRC16 hash from MAC address (2 bytes hex)
     option recovery_timer '00'                  # <INT> Time (in seconds) to ??
     option last_cmd_id '0'                      # <int> ??
     option command_id '00'                      # <int> Identificator of the current command
-    option command ''                           # <string> String containing the command/s to execute
+    option status '0'  
 
-option wibed experiment
+config wibed experiment
     option exp_id '0000'                        # <int> The current experiment identifier
-    option prepare '0'                          # <bool> 1: node allowed to prepare next experiment ; 0: not allowed
-    option run '0'                              # <0 or int> 0: experiment stopped ; int: time (in seconds) until current experiment expires
     option ov_url 'http://'                     # <URL> HTTP URL to download the experiment data to the overlay partition
     option save_url 'http://'                   # <URL> HTTP URL to push (rsync) the /save files during the experiment
 
 config wibed upgrade
     option version '01'                         # <int> ??
+    option model ''
     option auto '0'                             # <bool> ??
     option upg_url 'http://'                    # <url> The HTTP URL of the new firmware
     option upg_timer 'http://'                  # <timer> Timer until the upgrade should start
 
-option wibed management
-    option iface 'eth0 wlan0'			# <list of strings> List of managment interfaces
-    option channel '140'			# <int> Wireless channel (in the 5GHz band)
+config wibed management
+    list ifaces 'eth0'			
+    list ifaces 'wlan0'
+    option channel5 '36'			# <int> Wireless channel (in the 5GHz band)
+    option channel2 '1'				# <int> Wireless channel (in the 2.4GHz band)
     option bssid '00:C0:FF:EE:C0:DE'		# <hex string> MAC address (which?)
-    option essid 'Wibed'			# <string> Wireless Identificator string
-    option ipv4 '10.254.x.y/24'			# <IPv4> IPv4 address for management (e.g. 10.254.XX.YY/24)
-    option ipv6 'fdf0:9999:8888:XXYY::1/64'	# <IPv6> IPv6 address for management (e.g. fdf0:9999:8888:XXYY::/64)
+    option ssid 'wibed'				# <string> Wireless Identificator string
+    option ipv4_net '10.99.R1.R2/16' 
+    option ipv6_net 'fdba:99:R1R2::1/64'
 
