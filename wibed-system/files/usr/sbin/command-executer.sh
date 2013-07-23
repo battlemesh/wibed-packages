@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 RESULTS_DIR="/var/wibed/results"
 
