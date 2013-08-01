@@ -1,0 +1,497 @@
+#!/usr/bin/lua
+
+io = require("io")
+lfs = require("lfs")
+http = require("socket.http")
+ltn12 = require("ltn12")
+json = require ("dkjson")
+
+RESULTS_DIR = "results"
+COMMANDS_PIPE = "pipes/commands"
+
+-- Status
+INIT = 0
+IDLE = 1
+PREPARING = 2
+READY = 3
+RUNNING = 4
+UPGRADING = 5
+ERROR = 6
+
+-- Create python-like string formatting
+--
+-- Example:
+-- "Hello %s" % name
+getmetatable("").__mod = function(a, b)
+    if not b then
+        return a
+    elseif type(b) == "table" then
+        return string.format(a, unpack(b))
+    else
+        return string.format(a, b)
+    end
+end
+
+-- Function: string:split
+--
+-- For splitting a string using a certain separator.
+--
+-- Params:
+-- * sep - The separator to use for the splitting.
+--
+-- Returns:
+-- * Table containing the splitted components.
+function string:split(sep)
+    local sep, fields = sep or ":", {}
+    local pattern = string.format("([^%s]+)", sep)
+    self:gsub(pattern, function(c) fields[#fields+1] = c end)
+    return fields
+end
+
+-- Function: string:trim
+--
+-- Trim whitespace around a string
+function string:trim()
+    return self:find'^%s*$' and '' or self:match'^%s*(.*%S)'
+end
+
+-- Function: fileExists
+--
+-- Checks if the specified file exists.
+--
+-- Params:
+-- * filePath - The path of the file to check.
+--
+-- Returns:
+-- * True if the file eixsts, false otherwise.
+function fileExists(filePath)
+	return lfs.attributes(filePath:gsub("\\$",""),"mode") == "file"
+end
+
+-- Function: pipeExists
+--
+-- Checks if the specified pipe exists.
+--
+-- Params:
+-- * pipePath - The path of the pipe to check.
+--
+-- Returns:
+-- * True if the pipe exists, false otherwise.
+function pipeExists(pipePath)
+	return lfs.attributes(pipePath:gsub("\\$",""),"mode") == "named pipe"
+end
+
+-- Function: folderExists
+--
+-- Checks if the specified folder exists.
+--
+-- Params:
+-- * folderPath - The path of the folder to check.
+--
+-- Returns:
+-- * True if the folder exists, false otherwise
+function folderExists(folderPath)
+	return lfs.attributes(folderPath:gsub("\\$",""),"mode") == "directory"
+end
+
+-- Function: readFile
+--
+-- Reads the entire contents of a file.
+--
+-- Params:
+-- * filePath - The path to the file to read.
+--
+-- Returns:
+-- * fileContents - The contents of the file
+function readFile(filePath)
+    local file = io.open(filePath, "rb")
+    local content = nil
+
+    if file then
+        content = file:read("*all")
+        file:close()
+
+        if content then
+            content = content:trim()
+        end
+    end
+
+    return content
+end
+
+-- Function: writeFile
+--
+-- Writes the provided content to the specified file.
+--
+-- Params:
+-- * filePath - The path to the file to write.
+-- * content - The content to write.
+function writeFile(filePath, content)
+    if not content then
+        content = ""
+    end
+    local file = assert(io.open(filePath, "w"))
+    assert(file:write(content))
+    file:close()
+end
+
+-- Function: executeCommand
+--
+-- Executes a shell command returning the status code
+-- and stdout.
+--
+-- Params:
+-- * command - The command to execute.
+-- * captureStdout - Whether or not to capture stdout.
+--
+-- Returns:
+-- * exitCode - The exit code of the command.
+-- * stdout - The standard output of the command (if captureStdout = true).
+function executeCommand(command, captureStdout)
+    if captureStdout == nil then
+        captureStdout = true
+    end
+
+    if captureStdout then
+        local stdoutFilePath = os.tmpname()
+
+        local exitCode = os.execute("%s > %s" % {command, stdoutFilePath})
+        local stdout = readFile(stdoutFilePath)
+
+        return exitCode, stdout
+    else
+        return os.execute("%s" % {command})
+    end
+end
+
+-- Function: commandExists
+--
+-- Checks if the specified command exists in the system.
+--
+-- Params:
+-- * command - The command to check.
+--
+-- Returns:
+-- * 0 - If the command exists, 1 - otherwise.
+function commandExists(command)
+    local exitCode, stdout = executeCommand("type \"%s\" &> /dev/null" % command)
+
+    return exitCode == 0
+end
+
+
+-- Function: readVariable
+--
+-- Read variable from UCI or config files depending on
+-- environment.
+--
+-- Params:
+-- * variableName - The name of the variable to load.
+--
+-- Returns:
+-- * Value read.
+function readVariable(variableName)
+    local readValue = nil
+
+    if UCI then
+        _, readValue = executeCommand("uci get \"%s.%s\"" % {UCI_CONFIG, 
+            variableName})
+    else
+        filePath="%s/%s" % {CONFIG_DIR, variableName}
+        readValue = readFile(filePath)
+    end
+
+    return readValue
+end
+
+-- Function: writeVariable
+--
+-- Write variable to UCI or config files depending on
+-- environment.
+--
+-- Params:
+-- * variableName - The name of the variable to write.
+-- * value - Value to write.
+function writeVariable(variableName, value)
+    if UCI then
+        executeCommand("uci set %s.%s=\"value\"" % {UCI_CONFIG, variableName, 
+            value})
+    else
+        writeFile("%s/%s" % {CONFIG_DIR, variableName}, value)
+    end
+end
+
+-- Function: buildResults
+--
+-- Builds a trable containing information about all non-acknowledged
+-- results.
+--
+-- Returns:
+-- * Table with information about non-acked results.
+function buildResults()
+    local results = {}
+    local resultAck = resultAck or 0
+
+    if not folderExists(RESULTS_DIR) then
+        return results
+    end
+
+    local _, commandIdsStr = executeCommand("ls -1 \"%s\"" % RESULTS_DIR)
+    local commandIds = commandIdsStr:split("\n")
+
+    if not commandIds then
+        return
+    end
+
+    for _, commandId in ipairs(commandIds) do
+        commandId = tonumber(commandId)
+
+        cmdResultFolder="%s/%s" % {RESULTS_DIR, commandId}
+
+        if commandId > resultAck then
+            if not fileExists("%s/exitCode" % cmdResultFolder) then
+                break
+            end
+
+            exitCode = readFile("%s/exitCode" % cmdResultFolder)
+            stdout = readFile("%s/stdout" % cmdResultFolder)
+            stderr = readFile("%s/stderr" % cmdResultFolder)
+
+            results[tostring(commandId)] = {exitCode, stdout, stderr}
+        end
+    end
+
+    return results
+end
+
+-- Function: doFirmwareUpgrade
+--
+-- Start the firmware upgrade process.
+--
+-- Params:
+-- * version - New firmware version.
+-- * hash - The hash of the new firmware.
+-- * upgradeTime - The time at which to make the upgrade.
+function doFirmwareUpgrade(version, hash, upgradeTime) 
+    success, statusCode, _, _ = http.request{ 
+        url = "%s/static/firmwares/%s" % {apiUrl, version}, 
+        sink = ltn12.sink.file(io.open("firmware.tar.gz"))
+    }
+
+    if success and statusCode == 200 then
+        status = UPGRADING
+        -- TODO: Launch upgrade script
+        writeVariable("upgrade.version", version)
+        status = INIT
+    else
+        -- TODO: Report error
+        print("Downloading of firmware failed: %s" % statusCode)
+        status = ERROR
+    end
+end
+
+-- Function: doPrepareExperiment
+--
+-- Prepares an experiment by downloading the respective overlay and 
+-- installing it.
+--
+-- Params:
+-- * experimentId - The id of the experiment.
+-- * overlayId - The id of the overlay used in the experiment.
+-- * overlayHash - The hash of the overlay.
+function doPrepareExperiment(experimentId, overlayId, overlayHash) 
+    success, statusCode, _, _ = http.request{ 
+        url = "%s/static/overlays/%s" % {apiUrl, overlayId}, 
+        sink = ltn12.sink.file(io.open("overlay.tar.gz", "w"))
+    }
+
+    if success and statusCode == 200 then
+        status = PREPARING
+        -- TODO: Install overlay
+        writeVariable("experiment.exp_id", experimentId)
+        status = READY
+    else
+        -- TODO: Report error
+        print("Downloading of overlay failed: %s" % statusCode)
+        status = ERROR
+    end
+end
+
+-- Function: doStartExperiment
+--
+-- Starts the experiment.
+function doStartExperiment()
+    status = RUNNING
+end
+
+-- Function: doFinishExperiment
+--
+-- Finishes an active experiment.
+function doFinishExperiment()
+    -- TODO: Kill experiment process
+    
+    writeFile(COMMANDS_PIPE, "-1 exit")
+    executeCommand("rm -r results")
+    executeCommand("rm -r overlay.tar.gz")
+    status = IDLE
+end
+
+-- Function: executeCommands
+--
+-- Sets up the commands provided as argument for execution.
+--
+-- Args:
+-- * commands - Table of commands {<id1>=<cmd1>, <id2>=<cmd2>}
+function executeCommands(commands)
+    if not commands then
+        return
+    end
+
+    local lastCommandId=commandAck
+    local sanitizedCommands = {}
+
+    for commandId, commandStr in pairs(commands) do
+        sanitizedCommands[tonumber(commandId)] = commandStr
+    end
+
+    for commandId, commandStr in ipairs(sanitizedCommands) do
+        print(commandId)
+        print(commandStr)
+        commandId = tonumber(commandId)
+
+        if not pipeExists(COMMANDS_PIPE) then
+            executeCommand("nohup ./command-executer &")
+            -- Give some time for named pipe to be created by executer
+            executeCommand("sleep 1")
+        end
+
+        print("Executing command %d \"%s\"" % {commandId, commandStr})
+        --This doesn't work so we have to hack a lil bit
+        --writeFile(COMMANDS_PIPE, "%d %s" % {commandId, commandStr})
+        executeCommand("echo \"%d %s\" > \"%s\"" % 
+            {commandId, commandStr, COMMANDS_PIPE}, false)
+        print(exitCode)
+        print(stdout)
+        lastCommandId = commandId
+    end
+
+    writeVariable("general.commandAck", lastCommandId)
+end
+
+if commandExists("uci") then
+    -- Using UCI
+    UCI = true
+    UCI_CONFIG = "wibed"
+else
+    -- Using config files
+    UCI = false
+    CONFIG_DIR="config"
+
+    if not folderExists(CONFIG_DIR) then
+        fls.mkdir(CONFIG_DIR)
+    end
+end
+
+apiUrl = assert(readVariable("general.api_url"), "API URL not defined")
+print("API URL: %s" % apiUrl)
+id = assert(readVariable("general.node_id"), "Node ID not defined")
+print("Id: %s" % id)
+status = tonumber(readVariable("general.status")) or INIT
+print("Status: %d" % status)
+model = readVariable("upgrade.model")
+print("Model: %s" % model)
+version = readVariable("upgrade.version")
+print("Version: %s" % version)
+experimentId = readVariable("experiment.exp_id")
+print("Experiment Id: %s" % (experimentId or "None"))
+commandAck = tonumber(readVariable("general.commandAck"))
+print("Command Ack: %s" % (commandAck or "None"))
+resultAck = tonumber(readVariable("general.resultAck"))
+print("Result Ack: %s" % (resultAck or "None"))
+
+request = {}
+
+request["status"] = status
+
+if status == INIT then
+    request["model"] = model
+    request["version"] = version
+elseif status == IDLE or status == RUNNING or status == ERROR then
+    if commandAck then
+        request["results"] = buildResults()
+        request["commandAck"] = commandAck
+    end
+end
+
+jsonEncodedRequest = json.encode(request, {indent = true})
+
+print(" ")
+print("Request:")
+print(jsonEncodedRequest)
+print(" ")
+    
+
+responseBody, statusCode, _, _ = http.request( 
+    "%s/api/wibednode/%s" % {apiUrl, id}, 
+    jsonEncodedRequest)
+
+if responseBody and statusCode == 200 then
+    print("Communication with server successful")
+    print(" ")
+    print(responseBody)
+
+    response, pos, err = json.decode(responseBody)
+
+    if err then
+        print("Error parsing json: %s" % err)
+        os.exit(1)
+    elseif response["errors"] then
+        print("Error sent by server:")
+        for key, value in pairs(response["errors"]) do print(key, value) end
+        os.exit(1)
+    end
+
+    -- Migration from init to idle is automatic upon receival of 
+    -- response by server
+    if status == INIT then
+        status = IDLE
+    end
+
+    -- If IDLE
+    if status == IDLE then
+        local upgrade = response["upgrade"]
+        local experiment = response["experiment"]
+        if upgrade then
+            doFirmwareUpgrade(upgrade["version"], 
+                              upgrade["hash"],
+                              upgrade["utime"])
+        elseif experiment and experiment["action"] == "PREPARE" then
+            doPrepareExperiment(experiment["id"],
+                                experiment["overlay"],
+                                experiment["hash"])
+        end
+    elseif response["experiment"] and status >= PREPARING 
+                                  and status <= RUNNING then
+        if response["experiment"]["action"] == "FINISH" then
+            doFinishExperiment()
+        elseif response["experiment"]["action"] == "RUN" and
+               status == READY then
+            doStartExperiment()
+        end
+    elseif status == UPGRADING then
+        -- Empty for now
+    end
+
+    if status == IDLE or status == RUNNING or status == ERROR then
+        executeCommands(response["commands"])
+    end
+
+    local resultAck = response["resultAck"]
+    if resultAck then
+        writeVariable("general.resultAck", resultAck)
+    end
+
+    writeVariable("general.status", status)
+else
+    print("Communication with server unsuccessful: %s" % statusCode)
+end

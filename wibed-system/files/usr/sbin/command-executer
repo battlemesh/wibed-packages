@@ -1,18 +1,18 @@
 #!/bin/sh
 
-RESULTS_DIR="/var/wibed/results"
+RESULTS_DIR="results"
 
-COMMANDS_PIPE="/var/wibed/pipes/commands"
+COMMANDS_PIPE="pipes/commands"
 
 trap "rm -f $COMMANDS_PIPE" EXIT
 
 # Start command executer
-if [[ ! -p $COMMANDS_PIPE ]]; then
+if [ ! -p "$COMMANDS_PIPE" ]; then
     mkdir -p "$(dirname $COMMANDS_PIPE)"
     mkfifo $COMMANDS_PIPE
 fi
 
-if [[ ! -e $RESULTS_DIR ]]; then
+if [ ! -e "$RESULTS_DIR" ]; then
     mkdir $RESULTS_DIR
 fi
 
@@ -20,7 +20,7 @@ fi
 while true
 do
     if read commandId commandStr < $COMMANDS_PIPE; then
-        if [[ -z $commandId || -z $commandStr ]] ; then
+        if [ -z "$commandId" -o -z "$commandStr" ] ; then
             continue
         fi
 
@@ -28,14 +28,14 @@ do
         echo "Command Str: $commandStr"
 
         # Exit signal
-        if [ $commandId -lt 0 ] ; then
+        if [ "$commandId" -lt "0" ] ; then
             echo "Found exit signal"
             break
         fi
 
         commandDir="$RESULTS_DIR/$commandId"
 
-        if [[ ! -d $commandDir ]] ; then
+        if [ ! -d $commandDir ] ; then
             mkdir "$commandDir"
         fi
 
