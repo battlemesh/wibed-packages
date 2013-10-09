@@ -1,7 +1,7 @@
 #!/usr/bin/lua
 
 io = require("io")
-lfs = require("lfs")
+fs = require("nixio.fs")
 http = require("socket.http")
 ltn12 = require("ltn12")
 json = require ("dkjson")
@@ -65,7 +65,7 @@ end
 -- Returns:
 -- * True if the file eixsts, false otherwise.
 function fileExists(filePath)
-	return lfs.attributes(filePath:gsub("\\$",""),"mode") == "file"
+    return fs.stat(filePath) ~= nil
 end
 
 -- Function: pipeExists
@@ -78,7 +78,7 @@ end
 -- Returns:
 -- * True if the pipe exists, false otherwise.
 function pipeExists(pipePath)
-	return lfs.attributes(pipePath:gsub("\\$",""),"mode") == "named pipe"
+    return fs.stat(pipePath) ~= nil
 end
 
 -- Function: folderExists
@@ -91,7 +91,7 @@ end
 -- Returns:
 -- * True if the folder exists, false otherwise
 function folderExists(folderPath)
-	return lfs.attributes(folderPath:gsub("\\$",""),"mode") == "directory"
+    return fs.stat(folderPath) ~= nil
 end
 
 -- Function: readFile
