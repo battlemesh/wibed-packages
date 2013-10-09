@@ -360,7 +360,7 @@ function executeCommands(commands)
         commandId = tonumber(commandId)
 
         if not pipeExists(COMMANDS_PIPE) then
-            executeCommand("nohup ./command-executer &")
+            executeCommand("./command-executer &")
             -- Give some time for named pipe to be created by executer
             executeCommand("sleep 1")
         end
