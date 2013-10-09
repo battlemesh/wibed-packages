@@ -214,7 +214,7 @@ end
 -- * value - Value to write.
 function writeVariable(variableName, value)
     if UCI then
-        executeCommand("uci set %s.%s=\"value\"" % {UCI_CONFIG, variableName, 
+        executeCommand("uci set %s.%s=\"%s\"" % {UCI_CONFIG, variableName,
             value})
     else
         writeFile("%s/%s" % {CONFIG_DIR, variableName}, value)
