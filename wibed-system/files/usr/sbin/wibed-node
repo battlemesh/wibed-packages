@@ -332,7 +332,7 @@ function doFinishExperiment()
     -- TODO: Kill experiment process
     
     writeFile(COMMANDS_PIPE, "-1 exit")
-    executeCommand("rm -r results")
+    executeCommand("rm -r %s" % RESULTS_DIR)
     executeCommand("rm -r %s/overlay.tar.gz" % TMP_MNT_OVERLAY)
     status = IDLE
 end
