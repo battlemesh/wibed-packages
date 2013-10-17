@@ -1,8 +1,8 @@
 #!/bin/sh
 
-for device in /dev/sda /dev/sdb; do
+for device in /dev/sd*; do
     if [ -b $device ]; then
-        blkid | grep ${device}1.*wibed-overlay && continue
+        blkid -t LABEL=wibed-overlay ${device}1 &>/dev/null && continue
         wibed-prepare-usb $device &>/root/wibed-prepare-usb.log && reboot
         break
     fi
