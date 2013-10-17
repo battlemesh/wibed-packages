@@ -1,8 +1,7 @@
 #!/bin/sh
 
-RESULTS_DIR="results"
-
-COMMANDS_PIPE="pipes/commands"
+RESULTS_DIR="/root/results"
+COMMANDS_PIPE="/var/run/command-executer.sock"
 
 trap "rm -f $COMMANDS_PIPE" EXIT
 
