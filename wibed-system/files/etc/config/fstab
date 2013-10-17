@@ -11,3 +11,11 @@ config mount usb_overlay
     option enabled  0
     option enabled_fsck 1
 
+config mount usb_tmp_mnt
+    option target   /tmp/mnt/overlay
+    option label    wibed-overlay
+    option fstype   ext4
+    option options  rw,noatime,nodiratime
+    option enabled  1
+    option enabled_fsck 1
+

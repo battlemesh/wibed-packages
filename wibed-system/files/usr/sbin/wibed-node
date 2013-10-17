@@ -8,6 +8,7 @@ json = require ("dkjson")
 
 RESULTS_DIR = "/root/results"
 COMMANDS_PIPE = "/var/run/command-executer.sock"
+TMP_MNT_OVERLAY = "/tmp/mnt/overlay"
 
 -- Status
 INIT = 0
@@ -302,7 +303,7 @@ end
 function doPrepareExperiment(experimentId, overlayId, overlayHash) 
     success, statusCode, _, _ = http.request{ 
         url = "%s/static/overlays/%s" % {apiUrl, overlayId}, 
-        sink = ltn12.sink.file(io.open("overlay.tar.gz", "w"))
+        sink = ltn12.sink.file(io.open("%s/overlay.tar.gz" % TMP_MNT_OVERLAY, "w"))
     }
 
     if success and statusCode == 200 then
@@ -332,7 +333,7 @@ function doFinishExperiment()
     
     writeFile(COMMANDS_PIPE, "-1 exit")
     executeCommand("rm -r results")
-    executeCommand("rm -r overlay.tar.gz")
+    executeCommand("rm -r %s/overlay.tar.gz" % TMP_MNT_OVERLAY)
     status = IDLE
 end
 
