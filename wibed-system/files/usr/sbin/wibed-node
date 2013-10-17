@@ -352,10 +352,12 @@ function executeCommands(commands)
     local sanitizedCommands = {}
 
     for commandId, commandStr in pairs(commands) do
-        sanitizedCommands[tonumber(commandId)] = commandStr
+        table.insert(sanitizedCommands, {tonumber(commandId), commandStr})
     end
+    table.sort(sanitizedCommands, function (a,b) return b[1] < a[1] end)
 
-    for commandId, commandStr in ipairs(sanitizedCommands) do
+    for _ , pair in ipairs(sanitizedCommands) do
+        commandId, commandStr = unpack(pair)
         print(commandId)
         print(commandStr)
         commandId = tonumber(commandId)
