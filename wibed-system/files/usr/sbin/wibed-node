@@ -395,7 +395,7 @@ else
     CONFIG_DIR="config"
 
     if not folderExists(CONFIG_DIR) then
-        fls.mkdir(CONFIG_DIR)
+        fs.mkdirr(CONFIG_DIR)
     end
 end
 
