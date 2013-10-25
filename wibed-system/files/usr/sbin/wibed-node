@@ -8,7 +8,8 @@ json = require ("dkjson")
 
 RESULTS_DIR = "/root/results"
 COMMANDS_PIPE = "/var/run/command-executer.sock"
-TMP_MNT_OVERLAY = "/tmp/mnt/overlay"
+MNT_USB_OVERLAY = "/tmp/usb-overlay"
+MNT_FLASH_OVERLAY = "/tmp/flash-overlay"
 
 -- Status
 INIT = 0
@@ -301,16 +302,19 @@ end
 -- * overlayId - The id of the overlay used in the experiment.
 -- * overlayHash - The hash of the overlay.
 function doPrepareExperiment(experimentId, overlayId, overlayHash) 
+    status = PREPARING
+
     success, statusCode, _, _ = http.request{ 
         url = "%s/static/overlays/%s" % {apiUrl, overlayId}, 
-        sink = ltn12.sink.file(io.open("%s/overlay.tar.gz" % TMP_MNT_OVERLAY, "w"))
+        sink = ltn12.sink.file(io.open("%s/overlay.tar.gz" % MNT_USB_OVERLAY, "w"))
     }
 
     if success and statusCode == 200 then
-        status = PREPARING
-        -- TODO: Install overlay
-        writeVariable("experiment.exp_id", experimentId)
+        executeCommand("tar -xzf %s/overlay.tar.gz -C %s" % {MNT_USB_OVERLAY, MNT_USB_OVERLAY} )
+        executeCommand("cp -pr /overlay/* %s/" % MNT_USB_OVERLAY)
         status = READY
+        writeVariable("general.status", status)
+        writeVariable("experiment.exp_id", experimentId)
     else
         -- TODO: Report error
         print("Downloading of overlay failed: %s" % statusCode)
