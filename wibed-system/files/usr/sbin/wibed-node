@@ -5,6 +5,7 @@ fs = require("nixio.fs")
 http = require("socket.http")
 ltn12 = require("ltn12")
 json = require ("dkjson")
+libuci = require ("uci")
 
 RESULTS_DIR = "/root/results"
 COMMANDS_PIPE = "/var/run/command-executer.sock"
@@ -196,8 +197,9 @@ function readVariable(variableName)
     local readValue = nil
 
     if UCI then
-        _, readValue = executeCommand("uci get \"%s.%s\"" % {UCI_CONFIG, 
-            variableName})
+        local section, option = unpack(variableName:split("."))
+        local uci = libuci:cursor()
+        readValue = uci:get(UCI_CONFIG, section, option)
     else
         filePath="%s/%s" % {CONFIG_DIR, variableName}
         readValue = readFile(filePath)
@@ -216,10 +218,35 @@ end
 -- * value - Value to write.
 function writeVariable(variableName, value)
     if UCI then
-        executeCommand("uci set %s.%s=\"%s\"" % {UCI_CONFIG, variableName,
-            value})
+        local section, option = unpack(variableName:split("."))
+        uciSetInBothOverlays(UCI_CONFIG, section, option, value)
     else
         writeFile("%s/%s" % {CONFIG_DIR, variableName}, value)
+    end
+end
+
+-- Function: uciSetInBothOverlays
+--
+-- Write variable to the UCI database in flash and in the usb stick.
+--
+-- Params:
+-- * config - Which config file to use.
+-- * section - Which uci section.
+-- * option - Which uci option.
+-- * value - Value to write.
+function uciSetInBothOverlays(config, section, option, value)
+    for _, dir in ipairs({"/", MNT_USB_OVERLAY, MNT_FLASH_OVERLAY}) do
+        local confdir = "%s/etc/config" % dir
+        local savedir = "/tmp/.uci/%s" % dir
+        if folderExists(confdir) then
+            if not folderExists(savedir) then fs.mkdirr(savedir) end
+            local uci = libuci:cursor()
+            uci:set_confdir(confdir)
+            uci:set_savedir(savedir)
+            uci:set(config, section, option, value)
+            uci:save(config)
+            uci:commit(config)
+        end
     end
 end
 
