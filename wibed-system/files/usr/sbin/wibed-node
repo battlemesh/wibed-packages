@@ -354,18 +354,28 @@ end
 -- Starts the experiment.
 function doStartExperiment()
     status = RUNNING
+    uciSetInBothOverlays("fstab", "usb_overlay", "enabled", 1)
+    writeVariable("general.status", status)
+    executeCommand("reboot")
 end
 
 -- Function: doFinishExperiment
 --
 -- Finishes an active experiment.
 function doFinishExperiment()
-    -- TODO: Kill experiment process
-    
+    uciSetInBothOverlays("fstab", "usb_overlay", "enabled", 0)
+
     executeCommand("echo \"-1 exit\" > \"%s\"" % COMMANDS_PIPE, false)
     executeCommand("rm -r %s" % RESULTS_DIR)
-    executeCommand("rm -r %s/overlay.tar.gz" % TMP_MNT_OVERLAY)
+
+    if not folderExists(MNT_USB_OVERLAY) then
+        fs.mkdirr(MNT_USB_OVERLAY)
+    end
+    executeCommand("mount %s" % MNT_USB_OVERLAY)
+    executeCommand("rm -rf %s" % MNT_USB_OVERLAY)
     status = IDLE
+    writeVariable("general.status", status)
+    executeCommand("reboot")
 end
 
 -- Function: executeCommands
