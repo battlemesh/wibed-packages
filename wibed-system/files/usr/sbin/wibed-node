@@ -331,6 +331,8 @@ end
 function doPrepareExperiment(experimentId, overlayId, overlayHash) 
     status = PREPARING
 
+    executeCommand("rm -rf %s" % MNT_USB_OVERLAY)
+
     success, statusCode, _, _ = http.request{ 
         url = "%s/static/overlays/%s" % {apiUrl, overlayId}, 
         sink = ltn12.sink.file(io.open("%s/overlay.tar.gz" % MNT_USB_OVERLAY, "w"))
@@ -366,13 +368,7 @@ function doFinishExperiment()
     uciSetInBothOverlays("fstab", "usb_overlay", "enabled", 0)
 
     executeCommand("echo \"-1 exit\" > \"%s\"" % COMMANDS_PIPE, false)
-    executeCommand("rm -r %s" % RESULTS_DIR)
 
-    if not folderExists(MNT_USB_OVERLAY) then
-        fs.mkdirr(MNT_USB_OVERLAY)
-    end
-    executeCommand("mount %s" % MNT_USB_OVERLAY)
-    executeCommand("rm -rf %s" % MNT_USB_OVERLAY)
     status = IDLE
     writeVariable("general.status", status)
     executeCommand("reboot")
