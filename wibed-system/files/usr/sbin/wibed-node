@@ -330,6 +330,7 @@ end
 -- * overlayHash - The hash of the overlay.
 function doPrepareExperiment(experimentId, overlayId, overlayHash) 
     status = PREPARING
+    writeVariable("general.status", status)
 
     executeCommand("rm -rf %s" % MNT_USB_OVERLAY)
 
