@@ -5,6 +5,7 @@ config wibed general
     option last_cmd_id '0'                      # <int> ??
     option command_id '00'                      # <int> Identificator of the current command
     option status '0'  
+    option api_url 'http://10.139.40.43:5000/'  # <URL> HTTP URL for the controller API
 
 config wibed experiment
     option exp_id '0000'                        # <int> The current experiment identifier
