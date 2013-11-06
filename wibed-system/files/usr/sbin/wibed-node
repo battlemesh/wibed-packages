@@ -9,6 +9,7 @@ libuci = require ("uci")
 
 RESULTS_DIR = "/root/results"
 COMMANDS_PIPE = "/var/run/command-executer.sock"
+OVERLAY_DIR = "/overlay"
 MNT_USB_OVERLAY = "/tmp/usb-overlay"
 MNT_FLASH_OVERLAY = "/tmp/flash-overlay"
 
@@ -341,7 +342,7 @@ function doPrepareExperiment(experimentId, overlayId, overlayHash)
 
     if success and statusCode == 200 then
         executeCommand("tar -xzf %s/overlay.tar.gz -C %s" % {MNT_USB_OVERLAY, MNT_USB_OVERLAY} )
-        executeCommand("cp -pr /overlay/* %s/" % MNT_USB_OVERLAY)
+        executeCommand("cp -pr %s/* %s/" % {OVERLAY_DIR, MNT_USB_OVERLAY})
         status = READY
         writeVariable("general.status", status)
         writeVariable("experiment.exp_id", experimentId)
@@ -357,7 +358,7 @@ end
 -- Starts the experiment.
 function doStartExperiment()
     status = RUNNING
-    uciSetInBothOverlays("fstab", "usb_overlay", "enabled", 1)
+    uciSetInBothOverlays("fstab", "usb_overlay", "target", OVERLAY_DIR)
     writeVariable("general.status", status)
     executeCommand("reboot")
 end
@@ -366,7 +367,7 @@ end
 --
 -- Finishes an active experiment.
 function doFinishExperiment()
-    uciSetInBothOverlays("fstab", "usb_overlay", "enabled", 0)
+    uciSetInBothOverlays("fstab", "usb_overlay", "target", MNT_USB_OVERLAY)
 
     executeCommand("echo \"-1 exit\" > \"%s\"" % COMMANDS_PIPE, false)
 
