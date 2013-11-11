@@ -179,9 +179,6 @@ local function clean()
 			x:delete("network", s[".name"])
 		end
 	end)
-	
-	x:foreach("network", "switch_vlan", function(s) x:delete("network", s[".name"]) end)
-	x:foreach("network", "switch", function(s) x:delete("network", s[".name"]) end)
 end
 
 local function exec_hooks()
