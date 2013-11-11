@@ -103,9 +103,10 @@ local function split_ifaces(ifaces)
 	for _,i in ipairs(ifaces) do
 		if x:get("wireless",i) == "wifi-device" then
 			table.insert(wi,i)
-		else if is_net(i) then
+		--else if is_net(i) then
+		else
 			table.insert(et,i)
-		 	end
+		 --end
 		end
 	end
 	return et,wi
