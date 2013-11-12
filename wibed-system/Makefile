@@ -18,7 +18,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=wibed-system
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 PKG_BUILD_DIR := $(BUILD_DIR)/$(PKG_NAME)
 
 TIMESTAMP := $(shell date -u +%Y%m%d-%H%M)

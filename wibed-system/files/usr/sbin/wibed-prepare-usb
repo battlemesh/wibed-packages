@@ -18,7 +18,7 @@ EOF
 sync
 sleep 1
 
-mkfs.ext4 -L wibed-overlay -U cacacaca-caca-caca-caca-cacacacacaca ${DEVICE}1 || { echo "Partitioning $DEVICE failed."; exit 3; }
+mkfs.ext4 -L wibed-overlay ${DEVICE}1 || { echo "Partitioning $DEVICE failed."; exit 3; }
 
 /etc/init.d/fstab overlay_enable
 
