@@ -12,6 +12,7 @@ COMMANDS_PIPE = "/var/run/command-executer.sock"
 OVERLAY_DIR = "/overlay"
 MNT_USB_OVERLAY = "/tmp/usb-overlay"
 MNT_FLASH_OVERLAY = "/tmp/flash-overlay"
+REBOOT_DELAY = 60
 
 -- Status
 INIT = 0
@@ -361,7 +362,7 @@ function doStartExperiment()
     status = RUNNING
     uciSetInBothOverlays("fstab", "usb_overlay", "target", OVERLAY_DIR)
     writeVariable("general.status", status)
-    executeCommand("reboot")
+    executeCommand("sleep %d && reboot" % REBOOT_DELAY)
 end
 
 -- Function: doFinishExperiment
@@ -374,7 +375,7 @@ function doFinishExperiment()
 
     status = IDLE
     writeVariable("general.status", status)
-    executeCommand("reboot")
+    executeCommand("sleep %d && reboot" % REBOOT_DELAY)
 end
 
 -- Function: executeCommands
