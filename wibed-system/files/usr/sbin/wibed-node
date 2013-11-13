@@ -161,6 +161,7 @@ function executeCommand(command, captureStdout)
 
         local exitCode = os.execute("%s > %s" % {command, stdoutFilePath})
         local stdout = readFile(stdoutFilePath)
+        os.remove(stdoutFilePath)
 
         return exitCode, stdout
     else
