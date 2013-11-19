@@ -148,7 +148,7 @@ local function set_mgmt_net()
 	x:set("network", "mgmt", "ifname", ifaces)
 end
 	
-local function set_mgmt_gw()
+local function set_mgmt_lan()
 	if x:get("wibed","management","is_gw") == "1" then
 		print("Configuring node as Internet gateway...")
 		local ipv4 = generate_mgmt_lan_address()
@@ -164,14 +164,17 @@ local function set_mgmt_gw()
 		x:set("dhcp","mgmt_lan","limit","250")
 		x:set("dhcp","mgmt_lan","leasetime","1h")
 	
-		x:set("firewall","@zone[0]","name","mgmt_lan")
 		x:set("firewall","@zone[0]","network","mgmt_lan")
-		x:set("firewall","@forwarding[0]","src","mgmt_lan")
 	else
 		x:set("network", "mgmt_lan", "interface")
 		x:set("network", "mgmt_lan", "proto", "dhcp")
 		x:set("network", "mgmt_lan", "ifname", "br-mgmt")
 	end
+	
+	x:set("firewall","@zone[1]","input","ACCEPT")
+	x:set("firewall","@zone[1]","output","ACCEPT")
+	x:set("firewall","@zone[1]","forward","ACCEPT")
+
 end
 
 local function set_system()
@@ -286,6 +289,8 @@ function main()
 	x:commit("network")
 	x:commit("batman-adv")
 	x:commit("wireless")
+	x:commit("firewall")
+	x:commit("dhcp")
 	x:commit(ucic)
 	x:commit("system")
 	
