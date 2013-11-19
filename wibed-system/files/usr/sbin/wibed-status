@@ -1,0 +1,12 @@
+#!/bin/sh
+
+wget "$(uci get wibed.general.api_url)" -q -O- 1>/dev/null 2>&1
+if [ $? -eq 0 ]; then 
+	echo default-on > /sys/class/leds/tp-link\:blue\:qss/trigger
+	RETURN=0
+else
+	echo timer > /sys/class/leds/tp-link\:blue\:qss/trigger
+	RETURN=1
+fi
+echo $RETURN
+exit $RETURN
