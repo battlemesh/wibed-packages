@@ -276,7 +276,7 @@ function main()
 	reset_wifi()
 	clean()
 	set_mgmt_net()
-	set_mgmt_gw()
+	set_mgmt_lan()
 	set_mgmt_wifi()
 	set_system()
 
