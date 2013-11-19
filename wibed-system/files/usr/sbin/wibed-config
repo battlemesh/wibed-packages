@@ -163,18 +163,21 @@ local function set_mgmt_lan()
 		x:set("dhcp","mgmt_lan","start","2")
 		x:set("dhcp","mgmt_lan","limit","250")
 		x:set("dhcp","mgmt_lan","leasetime","1h")
-	
-		x:set("firewall","@zone[0]","network","mgmt_lan")
+		
+		x:foreach("firewall", "zone", function(s)
+			if x:get("firewall",s[".name"],"name") == "lan" then
+				 x:set("firewall",s[".name"],"network",{"mgmt_lan"})
+			end
+		end)
 	else
 		x:set("network", "mgmt_lan", "interface")
 		x:set("network", "mgmt_lan", "proto", "dhcp")
 		x:set("network", "mgmt_lan", "ifname", "br-mgmt")
 	end
 	
-	x:set("firewall","@zone[1]","input","ACCEPT")
-	x:set("firewall","@zone[1]","output","ACCEPT")
-	x:set("firewall","@zone[1]","forward","ACCEPT")
-
+	x:foreach("firewall", "zone", function(s) x:set("firewall", s[".name"],"input","ACCEPT") end)
+	x:foreach("firewall", "zone", function(s) x:set("firewall", s[".name"],"output","ACCEPT") end)
+	x:foreach("firewall", "zone", function(s) x:set("firewall", s[".name"],"forward","ACCEPT") end)
 end
 
 local function set_system()
