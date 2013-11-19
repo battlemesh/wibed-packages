@@ -8,7 +8,7 @@ config global 'global'
 
 config mount 'usb_overlay'
 	option target '/tmp/usb-overlay'
-	option label 'wibed-overlay'
+	option device '/dev/sda1'
 	option fstype 'ext4'
 	option options 'rw,noatime,nodiratime'
 	option enabled_fsck '1'
