@@ -11,11 +11,11 @@ if [ -f "/tmp/wibed-status.tmp" ]; then
 	RETURN=0
 else
 	echo timer > /sys/class/leds/tp-link\:blue\:qss/trigger
-	echo "." > /tmp/wibed-status.watchdog
+	echo "." >> /tmp/wibed-status.watchdog
 	RETURN=1
 fi
 
-if [ $(cat /tmp/wibed-status.watchdog | wc -l) -gt 60 ];
+if [ $(cat /tmp/wibed-status.watchdog | wc -l) -gt 60 ]; then
 	echo "Restoring defaults..." 
 #	/sbin/firstboot -y 
 	/sbin/reboot -f
