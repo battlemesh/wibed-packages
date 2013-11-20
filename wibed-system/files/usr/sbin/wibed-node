@@ -160,13 +160,13 @@ function executeCommand(command, captureStdout)
     if captureStdout then
         local stdoutFilePath = os.tmpname()
 
-        local exitCode = os.execute("%s > %s" % {command, stdoutFilePath})
+        local exitCode = os.execute(string.format("%s > %s",command, stdoutFilePath))
         local stdout = readFile(stdoutFilePath)
         os.remove(stdoutFilePath)
 
         return exitCode, stdout
     else
-        return os.execute("%s" % {command})
+        return os.execute(command)
     end
 end
 
@@ -180,7 +180,7 @@ end
 -- Returns:
 -- * 0 - If the command exists, 1 - otherwise.
 function commandExists(command)
-    local exitCode, stdout = executeCommand("type \"%s\" &> /dev/null" % command)
+    local exitCode, stdout = executeCommand(string.format("type \"%s\" &> /dev/null",command))
 
     return exitCode == 0
 end
@@ -204,7 +204,7 @@ function readVariable(variableName)
         local uci = libuci:cursor()
         readValue = uci:get(UCI_CONFIG, section, option)
     else
-        filePath="%s/%s" % {CONFIG_DIR, variableName}
+        filePath=string.format("%s/%s",CONFIG_DIR, variableName)
         readValue = readFile(filePath)
     end
 
@@ -224,7 +224,7 @@ function writeVariable(variableName, value)
         local section, option = unpack(variableName:split("."))
         uciSetInBothOverlays(UCI_CONFIG, section, option, value)
     else
-        writeFile("%s/%s" % {CONFIG_DIR, variableName}, value)
+        writeFile(string.format("%s/%s",CONFIG_DIR, variableName), value)
     end
 end
 
@@ -239,8 +239,8 @@ end
 -- * value - Value to write.
 function uciSetInBothOverlays(config, section, option, value)
     for _, dir in ipairs({"/", MNT_USB_OVERLAY, MNT_FLASH_OVERLAY}) do
-        local confdir = "%s/etc/config" % dir
-        local savedir = "/tmp/.uci/%s" % dir
+        local confdir = dir .. "/etc/config"
+        local savedir = "/tmp/.uci/" .. dir
         if folderExists(confdir) then
             if not folderExists(savedir) then fs.mkdirr(savedir) end
             local uci = libuci:cursor()
@@ -268,7 +268,7 @@ function buildResults()
         return results
     end
 
-    local _, commandIdsStr = executeCommand("ls -1 \"%s\"" % RESULTS_DIR)
+    local _, commandIdsStr = executeCommand(string.format("ls -1 \"%s\"",RESULTS_DIR))
     local commandIds = commandIdsStr:split("\n")
 
     if not commandIds then
@@ -278,16 +278,16 @@ function buildResults()
     for _, commandId in ipairs(commandIds) do
         commandId = tonumber(commandId)
 
-        cmdResultFolder="%s/%s" % {RESULTS_DIR, commandId}
+        cmdResultFolder=string.format("%s/%s",RESULTS_DIR, commandId)
 
         if commandId > resultAck then
-            if not fileExists("%s/exitCode" % cmdResultFolder) then
+            if not fileExists(string.format("%s/exitCode", cmdResultFolder)) then
                 break
             end
 
-            exitCode = readFile("%s/exitCode" % cmdResultFolder)
-            stdout = readFile("%s/stdout" % cmdResultFolder)
-            stderr = readFile("%s/stderr" % cmdResultFolder)
+            exitCode = readFile(string.format("%s/exitCode", cmdResultFolder))
+            stdout = readFile(string.format("%s/stdout", cmdResultFolder))
+            stderr = readFile(string.format("%s/stderr",cmdResultFolder))
 
             results[tostring(commandId)] = {exitCode, stdout, stderr}
         end
@@ -306,7 +306,7 @@ end
 -- * upgradeTime - The time at which to make the upgrade.
 function doFirmwareUpgrade(version, hash, upgradeTime) 
     success, statusCode, _, _ = http.request{ 
-        url = "%s/static/firmwares/%s" % {apiUrl, version}, 
+        url = string.format("%s/static/firmwares/%s",apiUrl, version), 
         sink = ltn12.sink.file(io.open("firmware.tar.gz"))
     }
 
@@ -317,7 +317,7 @@ function doFirmwareUpgrade(version, hash, upgradeTime)
         status = INIT
     else
         -- TODO: Report error
-        print("Downloading of firmware failed: %s" % statusCode)
+        print(string.format("Downloading of firmware failed: %s", statusCode))
         status = ERROR
     end
 end
@@ -335,22 +335,22 @@ function doPrepareExperiment(experimentId, overlayId, overlayHash)
     status = PREPARING
     writeVariable("general.status", status)
 
-    executeCommand("rm -rf %s" % MNT_USB_OVERLAY)
+    executeCommand(string.format("rm -rf %s", MNT_USB_OVERLAY))
 
     success, statusCode, _, _ = http.request{ 
-        url = "%s/static/overlays/%s" % {apiUrl, overlayId}, 
-        sink = ltn12.sink.file(io.open("%s/overlay.tar.gz" % MNT_USB_OVERLAY, "w"))
+        url = string.format("%s/static/overlays/%s",apiUrl, overlayId), 
+        sink = ltn12.sink.file(io.open(string.format("%s/overlay.tar.gz", MNT_USB_OVERLAY), "w"))
     }
 
     if success and statusCode == 200 then
-        executeCommand("tar -xzf %s/overlay.tar.gz -C %s" % {MNT_USB_OVERLAY, MNT_USB_OVERLAY} )
-        executeCommand("cp -pr %s/* %s/" % {OVERLAY_DIR, MNT_USB_OVERLAY})
+        executeCommand(string.format("tar -xzf %s/overlay.tar.gz -C %s",MNT_USB_OVERLAY, MNT_USB_OVERLAY) )
+        executeCommand(string.format("cp -pr %s/* %s/",OVERLAY_DIR, MNT_USB_OVERLAY))
         status = READY
         writeVariable("general.status", status)
         writeVariable("experiment.exp_id", experimentId)
     else
         -- TODO: Report error
-        print("Downloading of overlay failed: %s" % statusCode)
+        print("Downloading of overlay failed: " .. statusCode)
         status = ERROR
     end
 end
@@ -362,7 +362,7 @@ function doStartExperiment()
     status = RUNNING
     uciSetInBothOverlays("fstab", "usb_overlay", "target", OVERLAY_DIR)
     writeVariable("general.status", status)
-    executeCommand("sleep %d && reboot" % REBOOT_DELAY)
+    executeCommand(string.format("sleep %d && reboot",REBOOT_DELAY))
 end
 
 -- Function: doFinishExperiment
@@ -371,11 +371,11 @@ end
 function doFinishExperiment()
     uciSetInBothOverlays("fstab", "usb_overlay", "target", MNT_USB_OVERLAY)
 
-    executeCommand("echo \"-1 exit\" > \"%s\"" % COMMANDS_PIPE, false)
+    executeCommand(string.format("echo \"-1 exit\" > \"%s\"",COMMANDS_PIPE), false)
 
     status = IDLE
     writeVariable("general.status", status)
-    executeCommand("sleep %d && reboot" % REBOOT_DELAY)
+    executeCommand(string.format("sleep %d && reboot", REBOOT_DELAY))
 end
 
 -- Function: executeCommands
@@ -409,11 +409,10 @@ function executeCommands(commands)
             executeCommand("sleep 1")
         end
 
-        print("Executing command %d \"%s\"" % {commandId, commandStr})
+        print(string.format("Executing command %d \"%s\"", commandId, commandStr))
         --This doesn't work so we have to hack a lil bit
         --writeFile(COMMANDS_PIPE, "%d %s" % {commandId, commandStr})
-        executeCommand("echo \"%d %s\" > \"%s\"" % 
-            {commandId, commandStr, COMMANDS_PIPE}, false)
+        exitCode,stdout = executeCommand(string.format("echo \"%d %s\" > \"%s\"", commandId, commandStr, COMMANDS_PIPE), false)
         print(exitCode)
         print(stdout)
         lastCommandId = commandId
@@ -437,21 +436,21 @@ else
 end
 
 apiUrl = assert(readVariable("general.api_url"), "API URL not defined")
-print("API URL: %s" % apiUrl)
+print(string.format("API URL: %s", apiUrl))
 id = assert(readVariable("general.node_id"), "Node ID not defined")
-print("Id: %s" % id)
+print(string.format("Id: %s", id))
 status = tonumber(readVariable("general.status")) or INIT
-print("Status: %d" % status)
+print(string.format("Status: %d", status))
 model = readVariable("upgrade.model")
-print("Model: %s" % model)
+print(string.format("Model: %s", model))
 version = readVariable("upgrade.version")
-print("Version: %s" % version)
+print(string.format("Version: %s", version))
 experimentId = readVariable("experiment.exp_id")
-print("Experiment Id: %s" % (experimentId or "None"))
+print(string.format(string.format("Experiment Id: %s", (experimentId or "None"))))
 commandAck = tonumber(readVariable("general.commandAck"))
-print("Command Ack: %s" % (commandAck or "None"))
+print(string.format("Command Ack: %s", (commandAck or "None")))
 resultAck = tonumber(readVariable("general.resultAck"))
-print("Result Ack: %s" % (resultAck or "None"))
+print(string.format("Result Ack: %s", (resultAck or "None")))
 
 request = {}
 
@@ -476,7 +475,7 @@ print(" ")
     
 
 responseBody, statusCode, _, _ = http.request( 
-    "%s/api/wibednode/%s" % {apiUrl, id}, 
+    string.format("%s/api/wibednode/%s", apiUrl, id), 
     jsonEncodedRequest)
 
 if responseBody and statusCode == 200 then
@@ -487,7 +486,7 @@ if responseBody and statusCode == 200 then
     response, pos, err = json.decode(responseBody)
 
     if err then
-        print("Error parsing json: %s" % err)
+        print(string.format("Error parsing json: %s", err))
         os.exit(1)
     elseif response["errors"] then
         print("Error sent by server:")
@@ -537,5 +536,5 @@ if responseBody and statusCode == 200 then
 
     writeVariable("general.status", status)
 else
-    print("Communication with server unsuccessful: %s" % statusCode)
+    print(string.format("Communication with server unsuccessful: %s", statusCode))
 end
