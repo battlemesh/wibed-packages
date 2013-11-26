@@ -42,7 +42,9 @@ do
         stderrFile="$commandDir/stderr"
         exitCodeFile="$commandDir/exitCode"
 
-        { eval $commandStr ; } 1>$stdoutFile 2>$stderrFile
+	[ -e "$(which timeout 2>/dev/null)" ] && TIMEOUT="timeout 30" || TIMEOUT=""
+	
+        { eval $TIMEOUT $commandStr; } 1>$stdoutFile 2>$stderrFile
 
         exitCode=$?
         echo $exitCode > $exitCodeFile
