@@ -33,13 +33,13 @@ define Package/wibed-system
   TITLE:=Basic system requirements for Wibed
   URL:=http://confine-project.eu
   DEPENDS:= \
-	+usbutils +sfdisk +e2fsprogs +sysfsutils \
+	+usbutils +sfdisk +e2fsprogs +sysfsutils +block-mount \
 	+kmod-usb-storage +kmod-usb-uhci +kmod-usb2 +kmod-usb-ohci +kmod-usb-core \
-	+kmod-dummy +kmod-fs-vfat +kmod-fs-ext4 \
+	+kmod-dummy +kmod-fs-vfat +kmod-fs-ext4 +kmod-tun \
 	+iwinfo +lua +libiwinfo-lua +libuci-lua +luci-lib-nixio \
 	+iputils-arping +iputils-clockdiff +iputils-tracepath \
     +dnsmasq-dhcpv6 +iputils-ping6 \
-    +iw +mtr +ip +coreutils +coreutils-timeout
+    +iw +mtr +ip +coreutils +coreutils-timeout +libopenssl +openssh-client
 endef
 
 define Package/wibed-system/description
