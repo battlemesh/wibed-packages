@@ -160,13 +160,13 @@ function executeCommand(command, captureStdout)
     if captureStdout then
         local stdoutFilePath = os.tmpname()
 
-        local exitCode = os.execute(string.format("%s > %s",command, stdoutFilePath))
+        local exitCode = os.execute(string.format("%s > %s", command, stdoutFilePath))
         local stdout = readFile(stdoutFilePath)
         os.remove(stdoutFilePath)
 
         return exitCode, stdout
     else
-        return os.execute(command)
+        return os.execute(string.format("%s",command))
     end
 end
 
@@ -238,7 +238,7 @@ end
 -- * option - Which uci option.
 -- * value - Value to write.
 function uciSetInBothOverlays(config, section, option, value)
-    for _, dir in ipairs({"/", MNT_USB_OVERLAY, MNT_FLASH_OVERLAY}) do
+    for _, dir in ipairs({"/", MNT_USB_OVERLAY, MNT_FLASH_OVERLAY, OVERLAY_DIR}) do
         local confdir = dir .. "/etc/config"
         local savedir = "/tmp/.uci/" .. dir
         if folderExists(confdir) then
