@@ -4,7 +4,26 @@ DEVICE=${1:-"/dev/sda"}
 
 [ -b $DEVICE ] || { echo "$DEVICE could not be found. Aborting."; exit 1; }
 
-grep ^$DEVICE /proc/mounts && { echo "$DEVICE mounted. Aborting."; exit 2; }
+set_uuid() {
+	uuid=$(blkid ${DEVICE}1 | tr ' ' \\n | grep ^UUID | cut -d\" -f2)
+
+	[ -z "$uuid" ] && echo "Cannot get UUID" || {
+		echo "UUID of ${DEVICE}1 is $uuid"
+		uci set fstab.usb_overlay.uuid="$uuid"
+		uci commit fstab
+	}
+}
+
+set_enabled() {
+	uci set fstab.usb_overlay.enabled=1
+	uci commit fstab
+}
+
+grep ^$DEVICE /proc/mounts && { 
+	echo "$DEVICE mounted, exiting..."
+	set_uuid
+	exit 1
+}
 
 dd if=/dev/zero of=$DEVICE bs=512 count=2
 
@@ -20,7 +39,14 @@ sleep 1
 
 mkfs.ext4 -L wibed-overlay ${DEVICE}1 || { echo "Partitioning $DEVICE failed."; exit 3; }
 
-/etc/init.d/fstab overlay_enable
+sync
+sleep 1
+
+set_uuid
+set_enabled
+
+block mount
+#/etc/init.d/fstab overlay_enable
 
 exit 0
 

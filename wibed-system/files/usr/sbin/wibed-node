@@ -335,7 +335,7 @@ function doPrepareExperiment(experimentId, overlayId, overlayHash)
     status = PREPARING
     writeVariable("general.status", status)
 
-    executeCommand(string.format("rm -rf %s", MNT_USB_OVERLAY))
+    executeCommand(string.format("rm -rf %s/*", MNT_USB_OVERLAY))
 
     success, statusCode, _, _ = http.request{ 
         url = string.format("%s/static/overlays/%s",apiUrl, overlayId), 
@@ -343,8 +343,15 @@ function doPrepareExperiment(experimentId, overlayId, overlayHash)
     }
 
     if success and statusCode == 200 then
-        executeCommand(string.format("tar -xzf %s/overlay.tar.gz -C %s",MNT_USB_OVERLAY, MNT_USB_OVERLAY) )
-        executeCommand(string.format("cp -pr %s/* %s/",OVERLAY_DIR, MNT_USB_OVERLAY))
+        executeCommand(string.format("mkdir %s/sbin 2>/dev/null",OVERLAY_DIR))
+        executeCommand(string.format("cp -f /rom/sbin/block %s/sbin/block",OVERLAY_DIR))
+        executeCommand(string.format("touch /etc/config/fstab"))
+        executeCommand(string.format("cp -a %s/* %s/",OVERLAY_DIR, MNT_USB_OVERLAY))
+        --executeCommand(string.format("cp -a %s/etc/config/fstab %s/etc/config/fstab",OVERLAY_DIR, MNT_USB_OVERLAY))
+        executeCommand(string.format("rm -f %s/etc/.extroot-uuid 2>/dev/null",MNT_USB_OVERLAY))
+        executeCommand(string.format("rm -rf %s/etc/uci-defaults 2>/dev/null",MNT_USB_OVERLAY))
+        executeCommand(string.format("tar -xhzf %s/overlay.tar.gz -C %s",MNT_USB_OVERLAY, MNT_USB_OVERLAY))
+		
         status = READY
         writeVariable("general.status", status)
         writeVariable("experiment.exp_id", experimentId)
