@@ -23,6 +23,14 @@ RUNNING = 4
 UPGRADING = 5
 ERROR = 6
 
+
+-- Overlay
+NO = 0
+FLASH = 1
+USB = 2
+
+
+
 -- Create python-like string formatting
 --
 -- Example:
@@ -222,13 +230,13 @@ end
 function writeVariable(variableName, value)
     if UCI then
         local section, option = unpack(variableName:split("."))
-        uciSetInBothOverlays(UCI_CONFIG, section, option, value)
+        uciSetInOverlays(UCI_CONFIG, section, option, value, "both")
     else
         writeFile(string.format("%s/%s",CONFIG_DIR, variableName), value)
     end
 end
 
--- Function: uciSetInBothOverlays
+-- Function: uciSetInOverlays
 --
 -- Write variable to the UCI database in flash and in the usb stick.
 --
@@ -237,8 +245,30 @@ end
 -- * section - Which uci section.
 -- * option - Which uci option.
 -- * value - Value to write.
-function uciSetInBothOverlays(config, section, option, value)
-    for _, dir in ipairs({"/", MNT_USB_OVERLAY, MNT_FLASH_OVERLAY, OVERLAY_DIR}) do
+-- * overlay - Which overlay to write, options can be "both", "USB", "FLASH"
+function uciSetInOverlays(config, section, option, value, overlay)
+
+    local overlays = {}
+    if overlay == "both" then
+        overlays = {"/", MNT_USB_OVERLAY, MNT_FLASH_OVERLAY, OVERLAY_DIR}
+    elseif overlay == "USB" then
+        if mountedOverlay == USB then
+            overlays = {OVERLAY_DIR}
+        else
+            overlays = {MNT_USB_OVERLAY}
+        end
+    elseif overlay == "FLASH" then
+        if mountedOverlay == FLASH then
+            overlays = {OVERLAY_DIR}
+        else
+            overlays = {MNT_FLASH_OVERLAY}
+        end
+    else
+        print("Something went terribly wrong")
+        os.exit(1)
+    end
+    
+    for _, dir in ipairs(overlays) do
         local confdir = dir .. "/etc/config"
         local savedir = "/tmp/.uci/" .. dir
         if folderExists(confdir) then
@@ -252,6 +282,32 @@ function uciSetInBothOverlays(config, section, option, value)
         end
     end
 end
+
+-- Function: getOverlay
+-- --
+-- -- Write variable to the UCI database in flash and in the usb stick.
+-- --
+-- -- Returns: if and which overlay exists
+function getOverlay()
+
+    _, overlay  = executeCommand(string.format("mount | grep \" /overlay\" | cut -d\" \" -f5"))
+    if overlay == "" then
+        print(string.format("No overlay"))
+        return NO
+    elseif overlay == "jffs2" then
+        print(string.format("Flash is the overlay"))
+        return FLASH
+    elseif overlay == "ext4" then
+        print(string.format("USB is the overlay"))
+        return USB
+    else
+        print(string.format("Error executing mount!"))
+        os.exit(1)
+    end
+end
+
+
+
 
 -- Function: buildResults
 --
@@ -349,7 +405,7 @@ function doPrepareExperiment(experimentId, overlayId, overlayHash)
         executeCommand(string.format("cp -a %s/* %s/",OVERLAY_DIR, MNT_USB_OVERLAY))
         --executeCommand(string.format("cp -a %s/etc/config/fstab %s/etc/config/fstab",OVERLAY_DIR, MNT_USB_OVERLAY))
         executeCommand(string.format("rm -f %s/etc/.extroot-uuid 2>/dev/null",MNT_USB_OVERLAY))
-        executeCommand(string.format("rm -rf %s/etc/uci-defaults 2>/dev/null",MNT_USB_OVERLAY))
+        --executeCommand(string.format("rm -rf %s/etc/uci-defaults 2>/dev/null",MNT_USB_OVERLAY))
         executeCommand(string.format("tar -xhzf %s/overlay.tar.gz -C %s",MNT_USB_OVERLAY, MNT_USB_OVERLAY))
 		
         status = READY
@@ -367,7 +423,7 @@ end
 -- Starts the experiment.
 function doStartExperiment()
     status = RUNNING
-    uciSetInBothOverlays("fstab", "usb_overlay", "target", OVERLAY_DIR)
+    uciSetInOverlays("fstab", "usb_overlay", "target", OVERLAY_DIR, "both")
     writeVariable("general.status", status)
     executeCommand(string.format("sleep %d && reboot",REBOOT_DELAY))
 end
@@ -376,7 +432,7 @@ end
 --
 -- Finishes an active experiment.
 function doFinishExperiment()
-    uciSetInBothOverlays("fstab", "usb_overlay", "target", MNT_USB_OVERLAY)
+    uciSetInOverlays("fstab", "usb_overlay", "target", MNT_USB_OVERLAY, "both")
 
     executeCommand(string.format("echo \"-1 exit\" > \"%s\"",COMMANDS_PIPE), false)
 
@@ -458,6 +514,9 @@ commandAck = tonumber(readVariable("general.commandAck"))
 print(string.format("Command Ack: %s", (commandAck or "None")))
 resultAck = tonumber(readVariable("general.resultAck"))
 print(string.format("Result Ack: %s", (resultAck or "None")))
+mountedOverlay = tonumber(getOverlay())
+--print(string.format("The overlay used is: %s", mountedOverlay))
+
 
 request = {}
 
