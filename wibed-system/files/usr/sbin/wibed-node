@@ -19,9 +19,11 @@ INIT = 0
 IDLE = 1
 PREPARING = 2
 READY = 3
-RUNNING = 4
-UPGRADING = 5
-ERROR = 6
+DEPLOYING = 4
+RUNNING = 5
+RESETTING = 6
+UPGRADING = 7
+ERROR = 8
 
 
 -- Overlay
@@ -253,13 +255,13 @@ function uciSetInOverlays(config, section, option, value, overlay)
         overlays = {"/", MNT_USB_OVERLAY, MNT_FLASH_OVERLAY, OVERLAY_DIR}
     elseif overlay == "USB" then
         if mountedOverlay == USB then
-            overlays = {OVERLAY_DIR}
+            overlays = {"/", OVERLAY_DIR}
         else
             overlays = {MNT_USB_OVERLAY}
         end
     elseif overlay == "FLASH" then
         if mountedOverlay == FLASH then
-            overlays = {OVERLAY_DIR}
+            overlays = {"/", OVERLAY_DIR}
         else
             overlays = {MNT_FLASH_OVERLAY}
         end
@@ -422,9 +424,12 @@ end
 --
 -- Starts the experiment.
 function doStartExperiment()
-    status = RUNNING
+    status = DEPLOYING
     uciSetInOverlays("fstab", "usb_overlay", "target", OVERLAY_DIR, "both")
-    writeVariable("general.status", status)
+    -- Change status to flash overlay as DEPLOYING
+    uciSetInOverlays("wibed", "general", "status", status, "FLASH")
+    -- Change future status to usb overlay as RUNNING
+    uciSetInOverlays("wibed", "general", "status", RUNNING, "USB")
     executeCommand(string.format("sleep %d && reboot",REBOOT_DELAY))
 end
 
@@ -436,8 +441,11 @@ function doFinishExperiment()
 
     executeCommand(string.format("echo \"-1 exit\" > \"%s\"",COMMANDS_PIPE), false)
 
-    status = IDLE
-    writeVariable("general.status", status)
+    status = RESETTING
+    -- Change status to usb overlay as RESETTING
+    uciSetInOverlays("wibed", "general", "status", status, "USB")
+    -- Change  future status to flash overlay as IDLE
+    uciSetInOverlays("wibed", "general", "status", IDLE, "FLASH")
     executeCommand(string.format("sleep %d && reboot", REBOOT_DELAY))
 end
 
@@ -600,7 +608,14 @@ if responseBody and statusCode == 200 then
         writeVariable("general.resultAck", resultAck)
     end
 
-    writeVariable("general.status", status)
+    -- Write any changes that maybe took place upon the response only in the current overlay
+    -- writeVariable("general.status", status)
+    if mountedOverlay == FLASH then
+        uciSetInOverlays("wibed", "general", "status", status, "FLASH")
+    else 
+        uciSetInOverlays("wibed", "general", "status", status, "USB")
+    end
+
 else
     print(string.format("Communication with server unsuccessful: %s", statusCode))
 end
