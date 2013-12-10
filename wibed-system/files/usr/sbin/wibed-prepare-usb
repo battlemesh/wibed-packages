@@ -45,8 +45,7 @@ sleep 1
 set_uuid
 set_enabled
 
-(sleep 10 && block mount) &
-#/etc/init.d/fstab overlay_enable
+sleep 5 && block mount
 
 exit 0
 

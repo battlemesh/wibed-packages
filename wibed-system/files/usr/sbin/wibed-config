@@ -89,8 +89,9 @@ local function is_net(dev)
 end
 
 local function is_wifi(dev)
-	local r = os.execute(string.format("ls /sys/class/net/%s/phy80211/ >/dev/null 2>&1",dev))
-	return r==0
+	local r1 = os.execute(string.format("ls /sys/class/net/%s/phy80211/ >/dev/null 2>&1",dev))
+	local r2 = os.execute("uci show wireless | grep ifname | grep "..dev)
+	return (r1==0 or r2==0)
 end
 
 local function reset_wifi()
@@ -121,11 +122,11 @@ end
 
 local function set_batadv(dev)
 	printf("-> Configuring batman-adv for %s ",dev)
-	local ifn = "bat_"..dev
+	local ifn = "bat"..dev
 	x:set("batman-adv","bat0","mesh")
 	x:set("batman-adv","bat0","bridge_loop_avoidance","1")
 	x:set("network",ifn,"interface")
-	x:set("network",ifn,"ifname",dev)
+--	x:set("network",ifn,"ifname",dev)
 	x:set("network",ifn,"proto","batadv")
 	x:set("network",ifn,"mesh","bat0")
 	if is_wifi(dev) then
@@ -205,7 +206,7 @@ local function clean()
 
 	print("Clearing network config...")
 	x:foreach("network", "interface", function(s)
-		if s[".name"]:match("^mgmt") or s[".name"]:match("^lan") or s[".name"]:match("^bat_") then
+		if s[".name"]:match("^mgmt") or s[".name"]:match("^lan") or s[".name"]:match("^bat") then
 			x:delete("network", s[".name"])
 		end
 	end)
@@ -233,7 +234,7 @@ local function set_mgmt_wifi()
 
 	for _,i in ipairs(ifaces) do
 		local id = string.format("mgmt%d", wifi_num)
-		local net = "bat_"..id
+		local net = "bat"..id
 
 		local t = iw.type(i)
 		if t then
@@ -278,9 +279,9 @@ end
 function main()
 	reset_wifi()
 	clean()
+	set_mgmt_wifi()
 	set_mgmt_net()
 	set_mgmt_lan()
-	set_mgmt_wifi()
 	set_system()
 
 	print("Committing config files...")
@@ -296,7 +297,6 @@ function main()
 	x:commit("dhcp")
 	x:commit(ucic)
 	x:commit("system")
-	
-	end
+end
 
 main()

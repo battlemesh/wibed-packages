@@ -252,16 +252,16 @@ function uciSetInOverlays(config, section, option, value, overlay)
 
     local overlays = {}
     if overlay == "both" then
-        overlays = {"/", MNT_USB_OVERLAY, MNT_FLASH_OVERLAY, OVERLAY_DIR}
+        overlays = {"/", MNT_USB_OVERLAY, MNT_FLASH_OVERLAY}
     elseif overlay == "USB" then
         if mountedOverlay == USB then
-            overlays = {"/", OVERLAY_DIR}
+            overlays = {"/"}
         else
             overlays = {MNT_USB_OVERLAY}
         end
     elseif overlay == "FLASH" then
         if mountedOverlay == FLASH then
-            overlays = {"/", OVERLAY_DIR}
+            overlays = {"/"}
         else
             overlays = {MNT_FLASH_OVERLAY}
         end
@@ -405,9 +405,8 @@ function doPrepareExperiment(experimentId, overlayId, overlayHash)
         executeCommand(string.format("cp -f /rom/sbin/block %s/sbin/block",OVERLAY_DIR))
         executeCommand(string.format("touch /etc/config/fstab"))
         executeCommand(string.format("cp -a %s/* %s/",OVERLAY_DIR, MNT_USB_OVERLAY))
-        --executeCommand(string.format("cp -a %s/etc/config/fstab %s/etc/config/fstab",OVERLAY_DIR, MNT_USB_OVERLAY))
         executeCommand(string.format("rm -f %s/etc/.extroot-uuid 2>/dev/null",MNT_USB_OVERLAY))
-        --executeCommand(string.format("rm -rf %s/etc/uci-defaults 2>/dev/null",MNT_USB_OVERLAY))
+        executeCommand(string.format("rm -rf %s/etc/uci-defaults 2>/dev/null",MNT_USB_OVERLAY))
         executeCommand(string.format("tar -xhzf %s/overlay.tar.gz -C %s",MNT_USB_OVERLAY, MNT_USB_OVERLAY))
 		
         status = READY
