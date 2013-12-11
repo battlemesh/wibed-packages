@@ -406,7 +406,7 @@ function doPrepareExperiment(experimentId, overlayId, overlayHash)
         executeCommand(string.format("touch /etc/config/fstab"))
         executeCommand(string.format("cp -a %s/* %s/",OVERLAY_DIR, MNT_USB_OVERLAY))
         executeCommand(string.format("rm -f %s/etc/.extroot-uuid 2>/dev/null",MNT_USB_OVERLAY))
-        executeCommand(string.format("rm -rf %s/etc/uci-defaults 2>/dev/null",MNT_USB_OVERLAY))
+        --executeCommand(string.format("rm -rf %s/etc/uci-defaults 2>/dev/null",MNT_USB_OVERLAY))
         executeCommand(string.format("tar -xhzf %s/overlay.tar.gz -C %s",MNT_USB_OVERLAY, MNT_USB_OVERLAY))
 		
         status = READY
