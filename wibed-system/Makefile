@@ -62,6 +62,7 @@ endef
 
 define Package/wibed-system/install
 	$(CP) ./files/* $(1)/
+	$(INSTALL_DIR) $(1)/save
 	echo "$(TIMESTAMP)" > files/etc/wibed.version
 	echo "$(GIT_BRANCH)" >> files/etc/wibed.version	
 	echo "$(GIT_HASH)" >> files/etc/wibed.version
