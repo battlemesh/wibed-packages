@@ -6,6 +6,7 @@ http = require("socket.http")
 ltn12 = require("ltn12")
 json = require ("dkjson")
 libuci = require ("uci")
+cURL = require("cURL")
 
 RESULTS_DIR = "/root/results"
 COMMANDS_PIPE = "/var/run/command-executer.sock"
@@ -13,6 +14,8 @@ OVERLAY_DIR = "/overlay"
 MNT_USB_OVERLAY = "/tmp/usb-overlay"
 MNT_FLASH_OVERLAY = "/tmp/flash-overlay"
 REBOOT_DELAY = 60
+SAVE_DIR = "/save"
+
 
 -- Status
 INIT = 0
@@ -432,10 +435,32 @@ function doStartExperiment()
     executeCommand(string.format("sleep %d && reboot",REBOOT_DELAY))
 end
 
+-- Function: saveResults
+--
+-- Send the results in /save folder to the server 
+function saveResults()
+    -- Create tar.gz files from the result files 
+    _, exp = executeCommand(string.format("ID=`uci get wibed.experiment.exp_id` && tar -cvzf /root/${ID}.tar.gz -C /save/ . &&  rm -rf /save/* && echo $ID"))
+    -- Transfer tar.gz file to the server and then delete it
+    local c = cURL.easy_init()
+    c:setopt_url("http://emmdim.pc.ac.upc.edu:5000/api/results")
+    local filePath=string.format("%s/%s.%s","/root", exp,"tar.gz")
+    print("Sending to server file: "..filePath)
+    local postdata = {
+	file = {file=filePath,
+		type="text/plain"}}
+    c:post(postdata)
+    c:perform()
+    fs.remove(filePath)
+end
+
 -- Function: doFinishExperiment
 --
 -- Finishes an active experiment.
 function doFinishExperiment()
+
+    saveResults()
+
     uciSetInOverlays("fstab", "usb_overlay", "target", MNT_USB_OVERLAY, "both")
 
     executeCommand(string.format("echo \"-1 exit\" > \"%s\"",COMMANDS_PIPE), false)
