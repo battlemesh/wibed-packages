@@ -5,11 +5,11 @@ PKG_NAME:=lua-curl
 PKG_VERSION:=2013-15-12.1
 PKG_RELEASE=$(PKG_SOURCE_VERSION)-1
 
-#PKG_SOURCE_PROTO:=git
-#PKG_SOURCE_URL:=git://github.com/msva/lua-curl
-#PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-#PKG_SOURCE_VERSION:=7bbb9ebfd4aa72a03b8fff51b3436b0d39fbcf7f
-#PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=git://github.com/msva/lua-curl
+PKG_SOURCE_SUBDIR:=$(PKG_NAME)
+PKG_SOURCE_VERSION:=047ac31ecd18c2526eed84e349e5016de2633fac
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 CMAKE_INSTALL:=1
 
 PKG_BUILD_DIR := $(BUILD_DIR)/$(PKG_NAME)
@@ -32,10 +32,10 @@ define Package/description
 	Lua-curl lib
 endef
 
-define Build/Prepare
-	mkdir -p $(PKG_BUILD_DIR)
-	$(CP) ./src/* $(PKG_BUILD_DIR)/
-endef
+#define Build/Prepare
+#	mkdir -p $(PKG_BUILD_DIR)
+#	$(CP) ./src/* $(PKG_BUILD_DIR)/
+#endef
 
 #define Build/Configure
 #endef
