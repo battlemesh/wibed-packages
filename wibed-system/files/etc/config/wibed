@@ -10,7 +10,7 @@ config wibed general
 config wibed experiment
     option exp_id '0000'                        # <int> The current experiment identifier
     option ov_url 'http://'                     # <URL> HTTP URL to download the experiment data to the overlay partition
-    option save_url 'http://'                   # <URL> HTTP URL to push (rsync) the /save files during the experiment
+    option save_url 'http://wibed.confine-project.eu/api/results'  # <URL> HTTP URL to push (rsync) the /save files during the experiment
 
 config wibed upgrade
     option version '01'                         # <int> ??
