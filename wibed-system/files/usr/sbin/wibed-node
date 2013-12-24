@@ -460,7 +460,7 @@ function saveResults()
     _, exp = executeCommand(string.format("ID=`uci get wibed.experiment.exp_id` && tar -cvzf /root/${ID}.tar.gz -C /save/ . &&  rm -rf /save/* && echo $ID"))
     -- Transfer tar.gz file to the server and then delete it
     local c = cURL.easy_init()
-    local saveUrl = readVariable("wibed_experiment.save_url")
+    local saveUrl = readVariable("experiment.save_url")
     print("The results url is: "..saveUrl)
     c:setopt_url(saveUrl)
     local filePath=string.format("%s/%s.%s","/root", exp,"tar.gz")
