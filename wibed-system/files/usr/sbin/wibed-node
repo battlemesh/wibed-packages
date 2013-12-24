@@ -34,7 +34,20 @@ NO = 0
 FLASH = 1
 USB = 2
 
+-- Declare configuration manner
+if commandExists("uci") then
+    -- Using UCI
+    UCI = true
+    UCI_CONFIG = "wibed"
+else
+    -- Using config files
+    UCI = false
+    CONFIG_DIR="config"
 
+    if not folderExists(CONFIG_DIR) then
+        fs.mkdirr(CONFIG_DIR)
+    end
+end
 
 -- Create python-like string formatting
 --
@@ -516,19 +529,6 @@ function executeCommands(commands)
     writeVariable("general.commandAck", lastCommandId)
 end
 
-if commandExists("uci") then
-    -- Using UCI
-    UCI = true
-    UCI_CONFIG = "wibed"
-else
-    -- Using config files
-    UCI = false
-    CONFIG_DIR="config"
-
-    if not folderExists(CONFIG_DIR) then
-        fs.mkdirr(CONFIG_DIR)
-    end
-end
 
 apiUrl = assert(readVariable("general.api_url"), "API URL not defined")
 print(string.format("API URL: %s", apiUrl))
