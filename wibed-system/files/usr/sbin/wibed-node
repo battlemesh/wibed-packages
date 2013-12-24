@@ -34,20 +34,6 @@ NO = 0
 FLASH = 1
 USB = 2
 
--- Declare configuration manner
-if commandExists("uci") then
-    -- Using UCI
-    UCI = true
-    UCI_CONFIG = "wibed"
-else
-    -- Using config files
-    UCI = false
-    CONFIG_DIR="config"
-
-    if not folderExists(CONFIG_DIR) then
-        fs.mkdirr(CONFIG_DIR)
-    end
-end
 
 -- Create python-like string formatting
 --
@@ -253,6 +239,24 @@ function writeVariable(variableName, value)
         writeFile(string.format("%s/%s",CONFIG_DIR, variableName), value)
     end
 end
+
+
+-- Declare configuration manner
+if commandExists("uci") then
+    -- Using UCI
+    UCI = true
+    UCI_CONFIG = "wibed"
+else
+    -- Using config files
+    UCI = false
+    CONFIG_DIR="config"
+
+    if not folderExists(CONFIG_DIR) then
+        fs.mkdirr(CONFIG_DIR)
+    end
+end
+
+
 
 -- Function: uciSetInOverlays
 --
