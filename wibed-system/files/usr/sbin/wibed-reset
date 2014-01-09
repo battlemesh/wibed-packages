@@ -4,16 +4,15 @@ STATUS=`uci get wibed.general.status`
 
 if [ "$STATUS" == 1 ] || [ "$STATUS" == 8 ] ; then
 	uci get wibed.general.commandAck
-	#EXIT=$?
 	if [ "$?" == 0 ] ; then
 		uci delete wibed.general.commandAck
 	fi
 	uci get wibed.general.resultAck
-	#EXIT=$?
 	if [ "$?" == 0 ] ; then
 		uci delete wibed.general.resultAck
 	fi
 	uci set wibed.general.status=0
+	rm -rf /root/results/*
 else
 	echo "Could not reset"
 	exit 1
