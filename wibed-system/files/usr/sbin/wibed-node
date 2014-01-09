@@ -606,6 +606,12 @@ if responseBody and statusCode == 200 then
 
     -- If IDLE
     if status == IDLE then
+        local reinit = response["reinit"]
+	if reinit then
+		print("Doing REINIT")
+    		executeCommand(string.format("/usr/sbin/wibed-reset"))
+        	os.exit(0)
+	end
         local upgrade = response["upgrade"]
         local experiment = response["experiment"]
         if upgrade then
