@@ -15,6 +15,18 @@ local function node_id()
 	return math.floor(hash / 256), hash % 256
 end
 
+local function mac_id()
+	local dev = "eth0"
+	local mac = assert(fs.readfile("/sys/class/net/"..dev.."/address"))
+	local id = string.format("%s%s%s",string.sub(mac,10,11),string.sub(mac, 13, 14),string.sub(mac, 16, 17))
+	return id
+end
+
+local function get_hostname()
+	local hostname = string.format("wibed-%s",mac_id())
+	return hostname
+end
+
 local function shell(cmd, raw)
 	local f = assert(io.popen(cmd, 'r'))
 	local s = assert(f:read('*a'))
@@ -63,9 +75,9 @@ local function generate_mgmt_lan_address()
 end
 
 local function generate_ssid()
-	local id = assert(x:get(ucic, "management", "ssid"))
-	local r1, r2 = node_id()
-	return string.format("%s-%02x%02x", id, r1, r2)
+	local ssid = assert(x:get(ucic, "management", "ssid"))
+	local id = mac_id()
+	return string.format("%s-%s",ssid, id)
 end
 
 local function get_bssid()
@@ -184,8 +196,7 @@ end
 local function set_system()
 	print("Configuring system...")
 	-- Setting hostname
-	local r1, r2 = node_id()
-	local hostname = string.format("wibed-%02x%02x", r1, r2)
+	local hostname = get_hostname()
 
 	x:foreach("system", "system", function(s)
 		x:set("system", s[".name"], "hostname", hostname)
