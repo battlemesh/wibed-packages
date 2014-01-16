@@ -39,7 +39,7 @@ define Package/wibed-system
 	+iwinfo +lua +libiwinfo-lua +libuci-lua +luci-lib-nixio \
 	+iputils-arping +iputils-clockdiff +iputils-tracepath \
     +dnsmasq-dhcpv6 +iputils-ping6 \
-    +iw +mtr +ip +coreutils +coreutils-timeout +libopenssl
+    +iw +mtr +ip +coreutils +coreutils-timeout +libopenssl +lua-curl
 endef
 
 define Package/wibed-system/description

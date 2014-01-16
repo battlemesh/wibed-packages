@@ -22,7 +22,7 @@ include $(INCLUDE_DIR)/cmake.mk
 
 define Package/lua-curl
   SECTION:=base
-  CATEGORY:=Utils
+  CATEGORY:=Libraries
   DEPENDS:=+lua +libcurl
   TITLE:=Lua-curl
 endef
