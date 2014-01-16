@@ -227,6 +227,7 @@ end
 local function set_mgmt_wifi()
 	print("Configuring management wifi devices")
 	local channel5 = assert(x:get(ucic, "management", "channel5"))
+	local txpower = x:get(ucic, "management", "txpower") or nil
 	local ch = assert(x:get(ucic, "management", "channel2"))
 	local i
 	local _,ifaces = split_ifaces(x:get(ucic, "management", "ifaces"))	
@@ -260,6 +261,9 @@ local function set_mgmt_wifi()
 			end
 	
 			x:set("wireless", i, "disabled", 0)
+			if txpower ~= nil then
+				x:set("wireless", i, "txpower", txpower)
+			end
 			x:set("wireless", id, "wifi-iface")
 			x:set("wireless", id, "ssid", generate_ssid())
 			x:set("wireless", id, "bssid", get_bssid())
