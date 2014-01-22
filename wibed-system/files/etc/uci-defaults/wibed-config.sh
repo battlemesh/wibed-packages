@@ -8,6 +8,9 @@ for device in /dev/sd*; do
     fi
 done
 
+#Fix wibed version in UCI configuration
+TEST=`tail -1 /etc/wibed.version` && uci set wibed.upgrade.version=`echo ${TEST:0:8}`
+
 wibed-config 2>&1 > /root/wibed-config.log
 
 (sleep 10 && reboot) &
