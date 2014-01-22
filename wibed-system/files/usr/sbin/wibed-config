@@ -15,6 +15,18 @@ local function node_id()
 	return math.floor(hash / 256), hash % 256
 end
 
+local function mac_id()
+	local dev = "eth0"
+	local mac = assert(fs.readfile("/sys/class/net/"..dev.."/address"))
+	local id = string.format("%s%s%s",string.sub(mac,10,11),string.sub(mac, 13, 14),string.sub(mac, 16, 17))
+	return id
+end
+
+local function get_hostname()
+	local hostname = string.format("wibed-%s",mac_id())
+	return hostname
+end
+
 local function shell(cmd, raw)
 	local f = assert(io.popen(cmd, 'r'))
 	local s = assert(f:read('*a'))
@@ -63,9 +75,9 @@ local function generate_mgmt_lan_address()
 end
 
 local function generate_ssid()
-	local id = assert(x:get(ucic, "management", "ssid"))
-	local r1, r2 = node_id()
-	return string.format("%s-%02x%02x", id, r1, r2)
+	local ssid = assert(x:get(ucic, "management", "ssid"))
+	local id = mac_id()
+	return string.format("%s-%s",ssid, id)
 end
 
 local function get_bssid()
@@ -90,12 +102,13 @@ end
 
 local function is_wifi(dev)
 	local r1 = os.execute(string.format("ls /sys/class/net/%s/phy80211/ >/dev/null 2>&1",dev))
-	local r2 = os.execute("uci show wireless | grep ifname | grep "..dev)
+	local r2 = os.execute(string.format("cat /tmp/wireless.backup | grep ifname | grep %s >/dev/null 2>&1",dev))
 	return (r1==0 or r2==0)
 end
 
 local function reset_wifi()
 	print("Reconfiguring wifi devices...")
+	os.execute("cp -f /etc/config/wireless /tmp/wireless.backup")
 	os.execute('echo "" > /etc/config/wireless')
 	os.execute('wifi detect > /etc/config/wireless')
 end
@@ -184,8 +197,7 @@ end
 local function set_system()
 	print("Configuring system...")
 	-- Setting hostname
-	local r1, r2 = node_id()
-	local hostname = string.format("wibed-%02x%02x", r1, r2)
+	local hostname = get_hostname()
 
 	x:foreach("system", "system", function(s)
 		x:set("system", s[".name"], "hostname", hostname)
@@ -227,7 +239,8 @@ end
 local function set_mgmt_wifi()
 	print("Configuring management wifi devices")
 	local channel5 = assert(x:get(ucic, "management", "channel5"))
-	local ch = assert(x:get(ucic, "management", "channel2"))
+	local txpower = x:get(ucic, "management", "txpower") or nil
+	local channel2 = assert(x:get(ucic, "management", "channel2"))
 	local i
 	local _,ifaces = split_ifaces(x:get(ucic, "management", "ifaces"))	
 	local wifi_num = 0
@@ -240,17 +253,19 @@ local function set_mgmt_wifi()
 		if t then
 			local is_5ghz = iw[t].hwmodelist(i).a
 
-			if is_5ghz then ch=channel5 end
+			if is_5ghz then ch=channel5
+			else  ch=channel2 end
+
 			if not ch then
 				printf("-> No channel defined for %dGHz %s", is_5ghz and 5 or 2, i)
 				return
 			end
-	
+
 			local ht = ch:match("[-+]?$")
-	
+
 			printf("-> Using channel %s for %dGHz %s", ch, is_5ghz and 5 or 2, i)
 			x:set("wireless", i, "channel", (ch:gsub("[-+]$", "")))
-	
+
 			if x:get("wireless", i, "ht_capab") then
 				if ht == "+" or ht == "-" then
 					x:set("wireless", i, "htmode", "HT40"..ht)
@@ -258,8 +273,11 @@ local function set_mgmt_wifi()
 					x:set("wireless", i, "htmode", "HT20")
 				end
 			end
-	
+
 			x:set("wireless", i, "disabled", 0)
+			if txpower ~= nil then
+				x:set("wireless", i, "txpower", txpower)
+			end
 			x:set("wireless", id, "wifi-iface")
 			x:set("wireless", id, "ssid", generate_ssid())
 			x:set("wireless", id, "bssid", get_bssid())

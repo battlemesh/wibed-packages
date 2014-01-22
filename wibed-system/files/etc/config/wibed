@@ -29,5 +29,6 @@ config wibed management
     option ipv4_net '10.99.R1.R2' 
     option ipv6_net 'fdba:99:R1R2::1/64'
     option ipv4_lan_net '192.168.R2.1'
+	option txpower '17'
     option is_gw '0'
 
