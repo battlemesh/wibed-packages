@@ -374,30 +374,53 @@ function buildResults()
     return results
 end
 
--- Function: doFirmwareUpgrade
+-- Function: doPrepareFirmwareUpgrade
 --
--- Start the firmware upgrade process.
+-- Prepare the firmware upgrade process.
 --
 -- Params:
 -- * version - New firmware version.
 -- * hash - The hash of the new firmware.
 -- * upgradeTime - The time at which to make the upgrade.
-function doFirmwareUpgrade(version, hash, upgradeTime) 
+function doPrepareFirmwareUpgrade(version, hash, upgradeTime) 
+    print(string.format("Fetching firmware upgrade at %s", upgradeTime))
     success, statusCode, _, _ = http.request{ 
         url = string.format("%s/static/firmwares/%s",apiUrl, version), 
-        sink = ltn12.sink.file(io.open("firmware.tar.gz"))
+        sink = ltn12.sink.file(io.open("/tmp/wibed.bin", 'w'))
     }
 
     if success and statusCode == 200 then
-        status = UPGRADING
-        -- TODO: Launch upgrade script
-        writeVariable("upgrade.version", version)
-        status = INIT
+	    status = UPGRADING
+        executeCommand(string.format("echo \"%s  wibed.bin\" > /tmp/%s.md5", hash, version ))
+        writeFile("/root/wibed.upgrade.version",version)
+	    print(string.format("Start UPGRADING process in the next wibed-node call"))
     else
-        -- TODO: Report error
         print(string.format("Downloading of firmware failed: %s", statusCode))
         status = ERROR
     end
+end
+
+
+-- Function: doFirmwareUpgrade
+--
+-- Start the firmware upgrade process.
+--
+function doFirmwareUpgrade() 
+    print(string.format("Attempting firmware upgrade"))
+	local oldVersion = readVariable("upgrade.version")
+	local upVersion = readFile("/root/wibed.upgrade.version")
+	writeVariable("upgrade.version", upVersion)
+	-- Execute the upgrade script
+	print(string.format("Executing the upgrade script"))
+	local exitCode, _ = executeCommand(string.format("/usr/sbin/wibed-upgrade %s" , upVersion ))
+	if exitCode == "1" then
+		status = ERROR
+		print(string.format("Failed to upgrade to version: %s ", upVersion))
+		-- Restore the old version number
+		writeVariable("upgrade.version", oldVersion)
+		-- Fall to error state
+		return 1
+	end
 end
 
 -- Function: doPrepareExperiment
@@ -556,6 +579,7 @@ mountedOverlay = tonumber(getOverlay())
 --print(string.format("The overlay used is: %s", mountedOverlay))
 
 
+
 request = {}
 
 request["status"] = status
@@ -601,21 +625,28 @@ if responseBody and statusCode == 200 then
     -- Migration from init to idle is automatic upon receival of 
     -- response by server
     if status == INIT then
+        -- Except the case that an upgrade was performed incorrectly
+        local upgrade = response["upgrade"]
+        if upgrade then
+            print(string.format("There was an error upgrading."))
+            print(string.format("Upgrade version and node version do not match"))
+            status = ERROR
+        end
         status = IDLE
     end
 
     -- If IDLE
     if status == IDLE then
         local reinit = response["reinit"]
-	if reinit then
-		print("Doing REINIT")
+    	if reinit then
+		    print("Doing REINIT")
     		executeCommand(string.format("/usr/sbin/wibed-reset"))
         	os.exit(0)
-	end
+        end
         local upgrade = response["upgrade"]
         local experiment = response["experiment"]
         if upgrade then
-            doFirmwareUpgrade(upgrade["version"], 
+            doPrepareFirmwareUpgrade(upgrade["version"], 
                               upgrade["hash"],
                               upgrade["utime"])
         elseif experiment and experiment["action"] == "PREPARE" then
@@ -632,7 +663,8 @@ if responseBody and statusCode == 200 then
             doStartExperiment()
         end
     elseif status == UPGRADING then
-        -- Empty for now
+        print(string.format("Have to upgrade"))
+        doFirmwareUpgrade()
     end
 
     if status == IDLE or status == RUNNING or status == ERROR then

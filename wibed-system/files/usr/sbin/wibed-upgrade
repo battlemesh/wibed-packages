@@ -1,0 +1,14 @@
+#!/bin/sh
+
+VERSION=$1
+
+cd /tmp/
+md5sum -sc ${VERSION}.md5
+if [ "$?" == 0 ] ; then
+    echo "UPGRADE"
+    sysupgrade -n wibed.bin
+else
+    echo "FAILED TO UPGRADE"
+    return 1
+fi
+return 0
