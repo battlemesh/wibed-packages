@@ -20,7 +20,7 @@ config wibed upgrade
     option upg_timer 'http://'                  # <timer> Timer until the upgrade should start
 
 config wibed management
-    list ifaces 'eth0.1/eth0'
+    list ifaces 'eth0.1'
     list ifaces 'radio2/radio0/radio1'
     option channel5 '36'						# <int> Wireless channel (in the 5GHz band)
     option channel2 '11'						# <int> Wireless channel (in the 2.4GHz band)
