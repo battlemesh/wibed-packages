@@ -8,6 +8,16 @@ local util = require "util"
 local ucic = "wibed"
 local x = uci:cursor()
 
+function string:split(pat)
+  pat = pat or '%s+'
+  local st, g = 1, self:gmatch("()("..pat..")")
+  local function getter(segs, seps, sep, cap1, ...)
+    st = sep and seps + #sep
+    return self:sub(segs, (seps or 0) - 1), cap1 or sep, ...
+  end
+  return function() if st then return getter(st, g()) end end
+end
+
 local function node_id()
 	local dev = "eth0"
 	local mac = assert(fs.readfile("/sys/class/net/"..dev.."/address"))
@@ -102,7 +112,7 @@ end
 
 local function is_wifi(dev)
 	local r1 = os.execute(string.format("ls /sys/class/net/%s/phy80211/ >/dev/null 2>&1",dev))
-	local r2 = os.execute(string.format("cat /tmp/wireless.backup | grep ifname | grep %s >/dev/null 2>&1",dev))
+	local r2 = os.execute(string.format("cat /tmp/wireless.backup | egrep 'ifname|wifi-device' | grep %s >/dev/null 2>&1",dev))
 	return (r1==0 or r2==0)
 end
 
@@ -240,12 +250,31 @@ local function set_mgmt_wifi()
 	print("Configuring management wifi devices")
 	local channel5 = assert(x:get(ucic, "management", "channel5"))
 	local txpower = x:get(ucic, "management", "txpower") or nil
+	local countrycode = x:get(ucic, "management", "country") or nil
 	local channel2 = assert(x:get(ucic, "management", "channel2"))
-	local i
+	local i,_,iface
+	local mgmt_ifaces = {}
+
+	for _,iface in ipairs(x:get(ucic, "management", "ifaces")) do
+		-- split by / and get the first existing iface
+		for i in iface:split("/") do
+			if is_wifi(i) or is_net(i) then
+				table.insert(mgmt_ifaces,i)
+				break
+			end
+		end
+	end
+	
+	for _,i in ipairs(mgmt_ifaces) do
+		print(i)
+	end
+		
+
 	local _,ifaces = split_ifaces(x:get(ucic, "management", "ifaces"))	
 	local wifi_num = 0
 
 	for _,i in ipairs(ifaces) do
+		
 		local id = string.format("mgmt%d", wifi_num)
 		local net = "bat"..id
 
@@ -278,6 +307,10 @@ local function set_mgmt_wifi()
 			if txpower ~= nil then
 				x:set("wireless", i, "txpower", txpower)
 			end
+			if countrycode ~= nil then
+				x:set("wireless", i, "country", countrycode)
+			end
+				
 			x:set("wireless", id, "wifi-iface")
 			x:set("wireless", id, "ssid", generate_ssid())
 			x:set("wireless", id, "bssid", get_bssid())
