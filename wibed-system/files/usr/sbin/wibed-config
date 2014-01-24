@@ -106,7 +106,12 @@ local function printr(r)
 end
 
 local function is_net(dev)
-	local r = os.execute(string.format("ls /sys/class/net/%s >/dev/null 2>&1",dev))
+	-- get the physical ethernet device if dev is a vlan
+	for d in dev:split(".") do
+		phy_dev = d
+		break
+	end
+	local r = os.execute(string.format("ls /sys/class/net/%s >/dev/null 2>&1",phy_dev))
 	return r==0
 end
 
