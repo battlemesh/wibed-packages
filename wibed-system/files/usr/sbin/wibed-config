@@ -127,19 +127,31 @@ local function wifi_up()
 	os.execute("wifi")
 end
 
+-- returns two tables, first one with the ethernet devices, second one with wifi
 local function split_ifaces(ifaces)
 	local _,i
 	local et = {}
 	local wi = {}
-	for _,i in ipairs(ifaces) do
-		if x:get("wireless",i) == "wifi-device" then
-			table.insert(wi,i)
-		--else if is_net(i) then
-		else
-			table.insert(et,i)
-		 --end
+	local valid_ifaces = {}
+	
+	for _,iface in ipairs(ifaces) do
+		-- split by / and get the first existing iface
+		for i in iface:split("/") do
+			if is_wifi(i) or is_net(i) then
+				table.insert(valid_ifaces,i)
+				break
+			end
 		end
 	end
+	
+	for _,i in ipairs(valid_ifaces) do
+		if x:get("wireless",i) == "wifi-device" then
+			table.insert(wi,i)
+		else
+			table.insert(et,i)
+		end
+	end
+
 	return et,wi
 end
 
@@ -158,8 +170,11 @@ local function set_batadv(dev)
 end
 
 local function set_mgmt_net()
-	print("Configuring management network devices")
+	print("Configuring management ethernet devices")
 	local ifaces,_ = split_ifaces(x:get(ucic, "management", "ifaces"))
+	local _,i
+	for _,i in ipairs(ifaces) do print("-> Interface "..i) end
+	
 	table.insert(ifaces,"bat0")
 	local ipv4, ipv6 = generate_address()
 
@@ -252,29 +267,12 @@ local function set_mgmt_wifi()
 	local txpower = x:get(ucic, "management", "txpower") or nil
 	local countrycode = x:get(ucic, "management", "country") or nil
 	local channel2 = assert(x:get(ucic, "management", "channel2"))
-	local i,_,iface
-	local mgmt_ifaces = {}
-
-	for _,iface in ipairs(x:get(ucic, "management", "ifaces")) do
-		-- split by / and get the first existing iface
-		for i in iface:split("/") do
-			if is_wifi(i) or is_net(i) then
-				table.insert(mgmt_ifaces,i)
-				break
-			end
-		end
-	end
-	
-	for _,i in ipairs(mgmt_ifaces) do
-		print(i)
-	end
-		
-
-	local _,ifaces = split_ifaces(x:get(ucic, "management", "ifaces"))	
+	local i,_
+	local _,ifaces = split_ifaces(x:get(ucic, "management", "ifaces"))
 	local wifi_num = 0
 
 	for _,i in ipairs(ifaces) do
-		
+		print("-> Interface " .. i)
 		local id = string.format("mgmt%d", wifi_num)
 		local net = "bat"..id
 
