@@ -1,5 +1,7 @@
 #!/bin/sh
 
+uci get libremap.location.configured && exit
+
 lat="41.38953022908476"
 lon="2.11306169629097"
 offset="1000000"
@@ -23,6 +25,7 @@ newlon="$lon1.$newlon2"
 echo "$newlat"
 echo "$newlon"
 
+uci set libremap.location.configured="1"
 uci set libremap.location.latitude="$newlat"
 uci set libremap.location.longitude="$newlon"
 uci commit
