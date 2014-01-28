@@ -8,14 +8,20 @@ local util = require "util"
 local ucic = "wibed"
 local x = uci:cursor()
 
-function string:split(pat)
-  pat = pat or '%s+'
-  local st, g = 1, self:gmatch("()("..pat..")")
-  local function getter(segs, seps, sep, cap1, ...)
-    st = sep and seps + #sep
-    return self:sub(segs, (seps or 0) - 1), cap1 or sep, ...
-  end
-  return function() if st then return getter(st, g()) end end
+
+function string:split_str( inSplitPattern, outResults )
+        if not outResults then
+                outResults = { }
+        end
+        local theStart = 1
+        local theSplitStart, theSplitEnd = string.find( self, inSplitPattern, theStart )
+        while theSplitStart do
+                table.insert( outResults, string.sub( self, theStart, theSplitStart-1 ) )
+                theStart = theSplitEnd + 1
+                theSplitStart, theSplitEnd = string.find( self, inSplitPattern, theStart )
+        end
+        table.insert( outResults, string.sub( self, theStart ) )
+        return outResults
 end
 
 local function node_id()
@@ -105,13 +111,16 @@ local function printr(r)
 	end
 end
 
-local function is_net(dev)
+local function is_net(d)
 	-- get the physical ethernet device if dev is a vlan
-	for d in dev:split(".") do
-		phy_dev = d
-		break
-	end
-	local r = os.execute(string.format("ls /sys/class/net/%s >/dev/null 2>&1",phy_dev))
+	local dev = d:split_str(".")
+	local fdev
+        if dev[0] == nil then
+                fdev = d
+        else
+                fdev = dev[0]
+        end
+	local r = os.execute(string.format("ls /sys/class/net/%s >/dev/null 2>&1",fdev))
 	return r==0
 end
 
@@ -141,12 +150,12 @@ local function split_ifaces(ifaces)
 	
 	for _,iface in ipairs(ifaces) do
 		-- split by / and get the first existing iface
-		for i in iface:split("/") do
-			if is_wifi(i) or is_net(i) then
-				table.insert(valid_ifaces,i)
-				break
-			end
-		end
+		local ifaces_t = iface:split_str("/")
+                for j = 1, #ifaces_t do
+                        if is_wifi(ifaces_t[j]) or is_net(ifaces_t[j]) then
+                                table.insert(valid_ifaces,ifaces_t[j])
+                        end
+                end
 	end
 	
 	for _,i in ipairs(valid_ifaces) do
@@ -325,7 +334,9 @@ local function set_mgmt_wifi()
 			set_batadv(id)
 	
 			wifi_num = wifi_num + 1
-			else printf("-> Error, device %s not found as WiFi interface", i)
+			break
+		else 
+			printf("-> Error, device %s not found as WiFi interface", i)
 		end	
 	end
 end
