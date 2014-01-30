@@ -151,21 +151,18 @@ local function split_ifaces(ifaces)
 	for _,iface in ipairs(ifaces) do
 		-- split by / and get the first existing iface
 		local ifaces_t = iface:split_str("/")
-                for j = 1, #ifaces_t do
-                        if is_wifi(ifaces_t[j]) or is_net(ifaces_t[j]) then
-                                table.insert(valid_ifaces,ifaces_t[j])
+		for j = 1, #ifaces_t do
+                        if is_wifi(ifaces_t[j]) then
+                                table.insert(wi,ifaces_t[j])
+                                break
+                        else
+                        if is_net(ifaces_t[j]) then
+                                table.insert(et,ifaces_t[j])
+                                break
+                        end
                         end
                 end
-	end
-	
-	for _,i in ipairs(valid_ifaces) do
-		if x:get("wireless",i) == "wifi-device" then
-			table.insert(wi,i)
-		else
-			table.insert(et,i)
-		end
-	end
-
+        end
 	return et,wi
 end
 
@@ -334,7 +331,6 @@ local function set_mgmt_wifi()
 			set_batadv(id)
 	
 			wifi_num = wifi_num + 1
-			break
 		else 
 			printf("-> Error, device %s not found as WiFi interface", i)
 		end	
