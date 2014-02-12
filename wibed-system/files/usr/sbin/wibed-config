@@ -202,6 +202,9 @@ local function set_mgmt_lan()
 	if x:get("wibed","management","is_gw") == "1" then
 		print("Configuring node as Internet gateway...")
 		local ipv4 = generate_mgmt_lan_address()
+		 -- BATMANT-ADV GW CONFIGURATION:
+                x:set("batman-adv", "bat0", "gw_mode", "server")
+
 		x:set("network", "mgmt_lan", "interface")
 		x:set("network", "mgmt_lan", "proto", "static")
 		x:set("network", "mgmt_lan", "ipaddr", ipv4)
@@ -220,6 +223,9 @@ local function set_mgmt_lan()
 			end
 		end)
 	else
+		-- BATMANT-ADV CLIENT CONFIGURATION:
+                x:set("batman-adv", "bat0", "gw_mode", "client")
+
 		x:set("network", "mgmt_lan", "interface")
 		x:set("network", "mgmt_lan", "proto", "dhcp")
 		x:set("network", "mgmt_lan", "ifname", "br-mgmt")
