@@ -327,6 +327,7 @@ local function set_mgmt_wifi()
 			end
 				
 			x:set("wireless", id, "wifi-iface")
+			x:set("wireless", id, "hidden", 1)
 			x:set("wireless", id, "ssid", generate_ssid())
 			x:set("wireless", id, "bssid", get_bssid())
 			x:set("wireless", id, "device", i)
