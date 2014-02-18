@@ -1,0 +1,46 @@
+#!/bin/sh
+
+ssh_neigh() {
+
+        if [ "$1" = "-d" ]
+        then
+                INT=$2
+                shift 2
+        else
+                INT=${INT:-eth0}
+        fi
+
+        PARAM="$@"
+
+        LNEIGH="$(INT=$INT list_neigh)"
+        if [ $(echo -e "$LNEIGH" | wc -l) -gt 1 ]
+        then
+                cnt=1
+                for i in ${LNEIGH}
+                do
+                        echo "$cnt.$i"
+                        cnt=$(expr $cnt + 1)
+                done
+                nchar=$(echo -n $cnt| wc -c)
+                read -n $nchar mychoice
+                cnt=1
+                for i in ${LNEIGH}
+                do
+                        if [ $mychoice -eq $cnt ]
+                        then
+                                CONNECT=$i
+                        fi
+                        cnt=$(expr $cnt + 1)
+                done
+                CONNECT=$CONNECT%$INT
+                
+        else
+                CONNECT=$LNEIGH%$INT
+        fi
+
+        unset INT
+        ssh $CONNECT ${PARAM}
+
+}
+
+ssh_neigh -d br-mgmt
