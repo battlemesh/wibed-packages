@@ -501,7 +501,6 @@ end
 -- Finishes an active experiment.
 function doFinishExperiment()
 
-    saveResults()
 
     uciSetInOverlays("fstab", "usb_overlay", "target", MNT_USB_OVERLAY, "both")
 
@@ -512,6 +511,9 @@ function doFinishExperiment()
     uciSetInOverlays("wibed", "general", "status", status, "USB")
     -- Change  future status to flash overlay as IDLE
     uciSetInOverlays("wibed", "general", "status", IDLE, "FLASH")
+    
+    saveResults()
+    
     executeCommand(string.format("sleep %d && reboot -f &", REBOOT_DELAY))
 end
 
@@ -635,15 +637,15 @@ if responseBody and statusCode == 200 then
         status = IDLE
     end
 
-if status == RESETTING then
-    local error, stdout = executeCommand(string.format("ps | grep reboot -c"), true)
-    local st = tonumber(stdout)
-    if st <= 2 then
-        status = IDLE
-        writeVariable("general.status", status)
-        executeCommand(string.format("sleep %d && reboot -f &", REBOOT_DELAY))
-    end
-end
+--if status == RESETTING then
+--    local error, stdout = executeCommand(string.format("ps | grep reboot -c"), true)
+--    local st = tonumber(stdout)
+--   if st <= 2 then
+--        status = IDLE
+--        writeVariable("general.status", status)
+--        executeCommand(string.format("sleep %d && reboot -f &", REBOOT_DELAY))
+--    end
+--end
 
 
 
