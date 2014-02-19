@@ -484,8 +484,10 @@ function saveResults()
     -- Transfer tar.gz file to the server and then delete it
     local c = cURL.easy_init()
     local saveUrl = readVariable("experiment.save_url")
-    print("The results url is: "..saveUrl)
-    c:setopt_url(saveUrl)
+    local nodeId = readVariable("general.node_id")
+    local url = string.format("%s/%s",saveUrl,nodeId)
+    print("The results url is: "..url)
+    c:setopt_url(url)
     local filePath=string.format("%s/%s.%s","/root", exp,"tar.gz")
     print("Sending to server file: "..filePath)
     local postdata = {
