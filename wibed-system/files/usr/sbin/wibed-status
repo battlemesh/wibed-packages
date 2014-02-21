@@ -5,12 +5,27 @@ rm -f /tmp/wibed-status.tmp 2>/dev/null
 sleep 5
 killall -9 wget 2>/dev/null
 
+#Checking which leds have your router
+
+#By Default WDR4300 leds
+DEFAULT_SERVER_LED=/sys/class/leds/tp-link\:blue\:qss
+
+#ADD HERE YOUR NODE LEDS {WDR4300, WDR4900}
+QSS=/sys/class/leds/tp-link\:blue\:qss
+WPS=/sys/class/leds/tp-link\:blue\:wps
+
+ls ${WPS} > /dev/null 2>&1
+if [ $? == 0 ]; then
+        DEFAULT_SERVER_LED=$WPS
+fi
+
+
 if [ -f "/tmp/wibed-status.tmp" ]; then 
-	echo default-on > /sys/class/leds/tp-link\:blue\:qss/trigger
+	echo default-on > ${DEFAULT_SEVER_LED}/trigger
 	echo "" > /tmp/wibed-status.watchdog
 	RETURN=0
 else
-	echo timer > /sys/class/leds/tp-link\:blue\:qss/trigger
+	echo timer > ${DEFAULT_SEVER_LED}/trigger
 	echo "." >> /tmp/wibed-status.watchdog
 	RETURN=1
 fi
