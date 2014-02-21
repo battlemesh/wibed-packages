@@ -374,6 +374,29 @@ function buildResults()
     return results
 end
 
+-- Function: sendError
+--
+-- Send error info to the server 
+function sendError()
+    -- Create tar.gz file from the result files 
+    _, exp = executeCommand(string.format("wibed-getlogs"))
+    -- Transfer tar.gz file to the server and then delete it
+    local c = cURL.easy_init()
+    local api = readVariable("general.api_url")
+    local nodeId = readVariable("general.node_id")
+    local url = string.format("%sapi/error/%s",api,nodeId)
+    print("The error url is: "..url)
+    c:setopt_url(url)
+    local filePath=string.format("/root/error.tar.gz")
+    print("Sending to server file: "..filePath)
+    local postdata = {
+	file = {file=filePath,
+		type="text/plain"}}
+    c:post(postdata)
+    c:perform()
+    fs.remove(filePath)
+end
+
 -- Function: doPrepareFirmwareUpgrade
 --
 -- Prepare the firmware upgrade process.
@@ -397,6 +420,7 @@ function doPrepareFirmwareUpgrade(version, hash, upgradeTime)
     else
         print(string.format("Downloading of firmware failed: %s", statusCode))
         status = ERROR
+	sendError()
     end
 end
 
@@ -418,6 +442,7 @@ function doFirmwareUpgrade()
 		print(string.format("Failed to upgrade to version: %s ", upVersion))
 		-- Restore the old version number
 		writeVariable("upgrade.version", oldVersion)
+		sendError()
 		-- Fall to error state
 		return 1
 	end
@@ -459,6 +484,7 @@ function doPrepareExperiment(experimentId, overlayId, overlayHash)
         -- TODO: Report error
         print("Downloading of overlay failed: " .. statusCode)
         status = ERROR
+	sendError()
     end
 end
 
@@ -635,6 +661,7 @@ if responseBody and statusCode == 200 then
             print(string.format("There was an error upgrading."))
             print(string.format("Upgrade version and node version do not match"))
             status = ERROR
+	    sendError()
         end
         status = IDLE
     end

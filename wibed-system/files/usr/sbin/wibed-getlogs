@@ -1,0 +1,10 @@
+#!/bin/sh
+
+mkdir /root/error 
+logread > /root/error/logread 
+cp /tmp/wibed-node.log /root/error/ 
+cp /root/wibed-config.log /root/error/
+cp /root/wibed-prepare-usb.log /root/error/
+cp /root/wibed-status.log /root/error/
+tar -cvzf /root/error.tar.gz -C /root/error/ . 
+rm -rf /root/error
