@@ -1,5 +1,14 @@
 #!/bin/sh
 
+list_neigh() {
+	INT=${INT:-eth0}
+	IPBRD=${IPBRD:-"ff02::2"}
+	MYLOCALLINK="$(ip addr show dev $INT | grep -e "inet6.*scope link" | awk '{print $2}' | cut -d/ -f1)"
+	NEIGH="$(ping6 ${IPBRD}%${INT} -n -c3 2>/dev/null | grep fe80 2>/dev/null | awk '{print $4}' | sed 's/\(.*\)./\1/' | grep -v "${MYLOCALLINK}"| sort -u)"
+	echo "$NEIGH"
+}
+
+
 ssh_neigh() {
 
         if [ "$1" = "-d" ]
