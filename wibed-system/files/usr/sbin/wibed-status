@@ -21,11 +21,11 @@ fi
 
 
 if [ -f "/tmp/wibed-status.tmp" ]; then 
-	echo default-on > ${DEFAULT_SEVER_LED}/trigger
+	echo default-on > ${DEFAULT_SERVER_LED}/trigger
 	echo "" > /tmp/wibed-status.watchdog
 	RETURN=0
 else
-	echo timer > ${DEFAULT_SEVER_LED}/trigger
+	echo timer > ${DEFAULT_SERVER_LED}/trigger
 	echo "." >> /tmp/wibed-status.watchdog
 	RETURN=1
 fi
