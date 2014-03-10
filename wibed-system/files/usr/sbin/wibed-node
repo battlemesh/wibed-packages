@@ -529,20 +529,26 @@ end
 -- Finishes an active experiment.
 function doFinishExperiment()
 
+    if mountedOverlay == USB then
+        uciSetInOverlays("fstab", "usb_overlay", "target", MNT_USB_OVERLAY, "both")
+        executeCommand(string.format("echo \"-1 exit\" > \"%s\"",COMMANDS_PIPE), false)
 
-    uciSetInOverlays("fstab", "usb_overlay", "target", MNT_USB_OVERLAY, "both")
-
-    executeCommand(string.format("echo \"-1 exit\" > \"%s\"",COMMANDS_PIPE), false)
-
-    status = RESETTING
-    -- Change status to usb overlay as RESETTING
-    uciSetInOverlays("wibed", "general", "status", status, "USB")
-    -- Change  future status to flash overlay as IDLE
-    uciSetInOverlays("wibed", "general", "status", IDLE, "FLASH")
+        status = RESETTING
+        -- Change status to usb overlay as RESETTING
+        uciSetInOverlays("wibed", "general", "status", status, "USB")
+        -- Change  future status to flash overlay as IDLE
+        uciSetInOverlays("wibed", "general", "status", IDLE, "FLASH")
     
-    saveResults()
+        saveResults()
     
-    executeCommand(string.format("sleep %d && reboot -f &", REBOOT_DELAY))
+        executeCommand(string.format("sleep %d && reboot -f &", REBOOT_DELAY))
+
+    else
+        -- Assuming that no error happened and the experiment
+        -- was finished before even running
+        status = IDLE
+    end
+
 end
 
 -- Function: executeCommands
