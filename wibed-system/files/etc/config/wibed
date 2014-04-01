@@ -7,6 +7,7 @@ config wibed general
     option status '0'  
     option coordx '41.38953'
     option coordy '2.11306'
+    option coordz '2'
     option api_url 'http://wibed.confine-project.eu/'  # <URL> HTTP URL for the controller API
 
 config wibed experiment

@@ -613,9 +613,9 @@ resultAck = tonumber(readVariable("general.resultAck"))
 print(string.format("Result Ack: %s", (resultAck or "None")))
 mountedOverlay = tonumber(getOverlay())
 --print(string.format("The overlay used is: %s", mountedOverlay))
-coordX = readVariable("general.coordx")
-coordY = readVariable("general.coordy")
-
+coordx = readVariable("general.coordx")
+coordy = readVariable("general.coordy")
+coordz = readVariable("general.coordz")
 
 request = {}
 
@@ -624,8 +624,10 @@ request["status"] = status
 if status == INIT then
     request["model"] = model
     request["version"] = version
-    request["coordx"] = coordX
-    request["coordy"] = coordY
+    request["coordx"] = coordx
+    request["coordy"] = coordy
+    request["coordz"] = coordz
+
 elseif status == IDLE or status == RUNNING or status == ERROR then
     if commandAck then
         request["results"] = buildResults()

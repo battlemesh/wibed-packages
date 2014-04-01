@@ -1,0 +1,49 @@
+#!/usr/bin/lua
+
+function usage()
+	print("   ")
+	print("USAGE:")
+	print("wibed-location [option] latitude longitude elevation")
+	print("--------------------------------------------------")
+	print("Options:")
+	print("--------------------------------------------------")
+	print("-s sleep 300ms")
+	print("The wibed-location script needs 3 values: longitude, latitude and elevation.")
+	print("Please, use the script in this way: wibed-location 41.38953 2.11306 200")
+	print("   ")
+end
+
+function locate (lat, lon, elev)
+	os.execute(string.format("uci set wibed.general.coordx=%s", lat))
+	os.execute(string.format("uci set wibed.general.coordy=%s", lon))
+	os.execute(string.format("uci set wibed.general.coordz=%s", elev))
+
+	os.execute(string.format("uci set libremap.location.longitude=%s", lat))
+	os.execute(string.format("uci set libremap.location.latitude=%s", lon))
+	os.execute(string.format("uci set libremap.location.elev=%s", elev))
+
+	os.execute("uci commit")
+	os.execute("libremap-agent >/dev/null &")
+end
+
+-- EXECUTION OF THE SCRIPT
+function main()
+
+	if #arg ~= 3 then 
+		if arg[1] == "-s" then
+			if #arg ~= 4 then
+				usage()
+			else
+				os.execute("sleep 300")
+				locate(arg[2], arg[3], arg[4])
+			end
+		else
+			usage()
+		end
+	else
+		locate(arg[1], arg[2], arg[3])
+	end
+end
+
+main()
+
