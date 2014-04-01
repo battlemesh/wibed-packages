@@ -5,6 +5,8 @@ config wibed general
     option last_cmd_id '0'                      # <int> ??
     option command_id '00'                      # <int> Identificator of the current command
     option status '0'  
+    option coordx '41.38953'
+    option coordy '2.11306'
     option api_url 'http://wibed.confine-project.eu/'  # <URL> HTTP URL for the controller API
 
 config wibed experiment
