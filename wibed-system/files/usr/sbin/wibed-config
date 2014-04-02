@@ -6,6 +6,7 @@ local uci = require "uci"
 local iw  = require "iwinfo"
 local util = require "util"
 local ucic = "wibed"
+local ucil = "libremap"
 local x = uci:cursor()
 
 
@@ -344,6 +345,17 @@ local function set_mgmt_wifi()
 	end
 end
 
+function set_location()
+	local coordx = x:get(ucic, "general", "coordx")
+	local coordy = x:get(ucic, "general", "coordy")
+	local coordz = x:get(ucic, "general", "coordz")
+
+	x:set(ucil, "location", "latitude", coordx)
+	x:set(ucil, "location", "longitude", coordy)
+	x:set(ucil, "location", "elev", coordz)
+end
+
+
 function main()
 	reset_wifi()
 	clean()
@@ -351,6 +363,7 @@ function main()
 	set_mgmt_net()
 	set_mgmt_lan()
 	set_system()
+	set_location()
 
 	print("Committing config files...")
 	x:save("network")
@@ -364,6 +377,7 @@ function main()
 	x:commit("firewall")
 	x:commit("dhcp")
 	x:commit(ucic)
+	x:commit(ucil)
 	x:commit("system")
 end
 

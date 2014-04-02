@@ -12,5 +12,6 @@ done
 TEST=`tail -1 /etc/wibed.version` && uci set wibed.upgrade.version=`echo ${TEST:0:8}`
 
 wibed-config 2>&1 > /root/wibed-config.log
+wibed-location -d >/dev/null
 
 (sleep 10 && reboot) &
