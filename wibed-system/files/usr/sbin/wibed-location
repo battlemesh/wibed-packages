@@ -1,5 +1,10 @@
 #!/usr/bin/lua
 
+local uci = require "uci"
+local ucic = "wibed"
+local x = uci:cursor()
+
+
 function usage()
 	print("   ")
 	print("USAGE:")
@@ -26,10 +31,26 @@ function locate (lat, lon, elev)
 	os.execute("libremap-agent >/dev/null &")
 end
 
+local function default_location()
+
+        local coordx = x:get(ucic, "general", "coordx")
+        local coordy = x:get(ucic, "general", "coordy")
+        local coordz = x:get(ucic, "general", "coordz")
+
+        os.execute(string.format("uci set libremap.location.longitude=%s", coordx))
+        os.execute(string.format("uci set libremap.location.latitude=%s", coordy))
+        os.execute(string.format("uci set libremap.location.elev=%s", coordz))
+
+        x:commit("libremap")
+end
+
+
 -- EXECUTION OF THE SCRIPT
 function main()
 
-	if #arg ~= 3 then 
+	if #arg == 1 and arg[1] == "-d" then
+		default_location()
+	elseif #arg ~= 3 then 
 		if arg[1] == "-s" then
 			if #arg ~= 4 then
 				usage()
@@ -46,4 +67,3 @@ function main()
 end
 
 main()
-
