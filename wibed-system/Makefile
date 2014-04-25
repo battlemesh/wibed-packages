@@ -38,8 +38,11 @@ define Package/wibed-system
 	+kmod-dummy +kmod-fs-vfat +kmod-fs-ext4 +kmod-tun \
 	+iwinfo +lua +libiwinfo-lua +libuci-lua +luci-lib-nixio \
 	+iputils-arping +iputils-clockdiff +iputils-tracepath \
-    +dnsmasq-dhcpv6 +iputils-ping6 \
-    +iw +mtr +ip +coreutils +coreutils-timeout +libopenssl +lua-curl
+	+dnsmasq-dhcpv6 +iputils-ping6 +vim-full +vim-runtime \
+	+iw +mtr +ip +coreutils +coreutils-timeout +libopenssl +lua-curl \
+	+reghack +openssh-client +luci-lib-libremap +luci-lib-libremap-contact \
+	+luci-lib-libremap-location +luci-lib-libremap-system +luci-lib-libremap-wireless \
+	+lua +luasocket +kmod-batman-adv
 endef
 
 define Package/wibed-system/description
