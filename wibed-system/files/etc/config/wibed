@@ -5,10 +5,17 @@ config wibed general
     option last_cmd_id '0'                      # <int> ??
     option command_id '00'                      # <int> Identificator of the current command
     option status '0'  
-    option coordx '41.38953'
-    option coordy '2.11306'
-    option coordz '2'
+    option coordx '41.38953'                    # <float> Longitude coordinates of the node
+    option coordy '2.11306'                     # <float> Latitude coordinates of the node
+    option coordz '2'                           # <int> Elevation of the node (Floor number)
     option api_url 'http://wibed.confine-project.eu/'  # <URL> HTTP URL for the controller API
+
+config wibed 'location'
+    option building 'C6'			# <string> Building short information
+    option floor 'E1'				# <string> Floor short information
+    option room '104'				# <string> Room short information
+    option situation 'Eloi desktop'		# <string> Emplacement short description
+    option description 'Beside the computer' 	# <string> Long description of the node's emplacement
 
 config wibed experiment
     option exp_id '0000'                        # <int> The current experiment identifier
@@ -32,7 +39,8 @@ config wibed management
     option ipv4_net '10.99.R1.R2' 
     option ipv6_net 'fdba:99:R1R2::1/64'
     option ipv4_lan_net '192.168.R2.1'
-	option country 'US'
-	option txpower '30'
+    option country 'US'
+    option txpower2 '30'
+    option txpower5 '20'
     option is_gw '0'
 

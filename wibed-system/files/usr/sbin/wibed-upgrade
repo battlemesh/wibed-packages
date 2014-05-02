@@ -5,8 +5,15 @@ VERSION=$1
 cd /tmp/
 md5sum -sc ${VERSION}.md5
 if [ "$?" == 0 ] ; then
-    echo "UPGRADE"
-    sysupgrade -n wibed.bin
+output = $(uci get wibed.upgrade.version)
+    if [ VERSION -eq output] ; then
+        echo "FAILED TO UPGRADE. CURRENT VERSION AND UPGRADE VERSION ARE THE SAME."
+	uci set wibed.general.status=8
+	return 1
+    else
+        echo "UPGRADE"
+        sysupgrade -n wibed.bin
+    fi
 else
     echo "FAILED TO UPGRADE"
     return 1

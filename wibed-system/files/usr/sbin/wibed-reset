@@ -1,19 +1,70 @@
 #!/bin/sh
 
-STATUS=`uci get wibed.general.status`
+usage () {
+        echo ""
+        echo "USAGE: wibed-reset"
+        echo ""
+        echo "Default: Reset status and Acknowledgements in the server and node."
+        echo "-h --help: This help"
+        echo "-hs --help-status: Information about wibed status numeration and description"
+        echo "-s [0-8]: set the wibed status. Use wibed-reset -hs to obtain a further information about wibed status."
+        echo "-d: resets the status to its original value"
+        echo ""
+}
 
-if [ "$STATUS" == 1 ] || [ "$STATUS" == 8 ] ; then
-	uci get wibed.general.commandAck
-	if [ "$?" == 0 ] ; then
-		uci delete wibed.general.commandAck
-	fi
-	uci get wibed.general.resultAck
-	if [ "$?" == 0 ] ; then
-		uci delete wibed.general.resultAck
-	fi
-	uci set wibed.general.status=0
-	rm -rf /root/results/*
-else
-	echo "Could not reset"
-	exit 1
+status_usage () {
+        echo ""
+        echo "Status usage:"
+        echo "0 - INIT ( Initial state and state after upgrade. )"
+        echo "1 - IDLE ( Default status. Waiting for orders. )"
+        echo "2 - PREPARING ( Downloading and preparing the experiment ( not install. ) )"
+        echo "3 - READY ( Overlay is correctly downloaded and ready to be installed. Waiting. )"
+        echo "4 - DEPLOYING ( Installing the overlay rebooting the node. )"
+        echo "5 - RUNNING ( Node is ready for the experiment. )"
+        echo "6 - RESETTING ( The node is resetting to its default configuration. )"
+        echo "7 - UPGRADING ( Upgrading the firmware. )"
+        echo "8 - ERROR ( An error was detected. )"
+        echo "Any other number is a wrong state and will be treated as in error state."
+        echo ""
+}
+
+if [ "$#" == 0 ] ; then
+        STATUS=`uci get wibed.general.status`
+
+        if [ "$STATUS" == 1 ] || [ "$STATUS" == 8 ] ; then
+                uci get wibed.general.commandAck
+                if [ "$?" == 0 ] ; then
+                        uci delete wibed.general.commandAck
+                fi
+                uci get wibed.general.resultAck
+                if [ "$?" == 0 ] ; then
+                        uci delete wibed.general.resultAck
+                fi
+                uci set wibed.general.status=0
+                rm -rf /root/results/*
+        else
+                echo "Could not reset"
+                exit 1
+        fi
+elif [ "$#" == 1 ] ; then
+        if [ "$1" == "-h" -o "$1" == "--help" ] ; then
+                usage
+        elif [ "$1" == "-d" ] ; then
+                uci set wibed.general.status=1
+        elif [ "$1" == "-hs" -o "$1" == "--help-status" ] ; then
+                status_usage
+        else
+                usage
+        fi
+elif [ "$#" == 2 ] ; then
+        if [ "$1" == "-s" ] ; then
+                if [ "$2" >= 0 -a "$2" <= 8 ] ; then
+                        uci set wibed.general.status=$2
+                else
+                        usage
+                fi
+        else
+                usage
+        fi
 fi
+

@@ -1,7 +1,7 @@
 /*
  * reghack - Utility to binary-patch the embedded mac80211 regulatory rules.
  *
- *   Copyright (C) 2012-2013 Jo-Philipp Wich <xm@subsignal.org>
+ *   Copyright (C) 2012-2014 Jo-Philipp Wich <xm@subsignal.org>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -126,6 +126,15 @@ static const struct search_regdomain search_regdomains[] = {
 		.reg  = REG_MATCH("US", 7, NL80211_DFS_FCC, REG_RULE(2402, 2472, 40, 3, 27, 0))
 	},
 
+	/* regdb.txt matches (new) */
+	{
+		.desc = "embedded 00 regdomain in cfg80211/regdb.o",
+		.reg  = REG_MATCH("00", 6, NL80211_DFS_UNSET, REG_RULE(2402, 2472, 40, 0, 20, 0))
+	}, {
+		.desc = "embedded US regdomain in cfg80211/regdb.o",
+		.reg  = REG_MATCH("US", 5, NL80211_DFS_FCC, REG_RULE(2402, 2472, 40, 0, 30, 0))
+	},
+
 	/* ath.ko matches */
 	{
 		.desc = "ath world regdomain with 3 rules in ath/regd.o",
@@ -196,7 +205,7 @@ static void bswap_rule(struct ieee80211_reg_rule *r)
 static int patch_regdomain(struct ieee80211_regdomain *pos,
                            const struct ieee80211_regdomain *comp)
 {
-	struct ieee80211_reg_rule r2 = REG_RULE(2400, 2484, 40, 0, 30, 0);
+	struct ieee80211_reg_rule r2 = REG_RULE(2400, 2483, 40, 0, 30, 0);
 	struct ieee80211_reg_rule r5 = REG_RULE(5140, 5860, 40, 0, 30, 0);
 	struct ieee80211_regdomain pattern = *comp;
 	struct ieee80211_regdomain_old *pos2 = (struct ieee80211_regdomain_old *)pos;
