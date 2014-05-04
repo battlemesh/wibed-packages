@@ -37,8 +37,8 @@ local function default_location()
         local coordy = x:get(ucic, "general", "coordy")
         local coordz = x:get(ucic, "general", "coordz")
 
-        os.execute(string.format("uci set libremap.location.longitude=%s", coordx))
-        os.execute(string.format("uci set libremap.location.latitude=%s", coordy))
+        os.execute(string.format("uci set libremap.location.longitude=%s", coordy))
+        os.execute(string.format("uci set libremap.location.latitude=%s", coordx))
         os.execute(string.format("uci set libremap.location.elev=%s", coordz))
 
         x:commit("libremap")
