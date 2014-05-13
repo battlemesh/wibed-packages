@@ -7,7 +7,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=reghack
-PKG_VERSION:=20141305	#Updated the reghack.c
+PKG_VERSION:=20141305
 PKG_RELEASE=1
 
 include $(INCLUDE_DIR)/package.mk
