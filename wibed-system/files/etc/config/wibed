@@ -11,7 +11,7 @@ config wibed general
     option api_url 'http://wibed.confine-project.eu/'  # <URL> HTTP URL for the controller API
 
 config wibed 'location'
-    option testbed 'Wibed-UPC'			# <string> Testbed description. This information will sort the nodes in the server. Use an comprehensive name.
+    option testbed 'wbm'			# <string> Testbed description. This information will sort the nodes in the server. Use an comprehensive name.
     option building 'C6'			# <string> Building short information
     option floor 'E1'				# <string> Floor short information
     option room '104'				# <string> Room short information
