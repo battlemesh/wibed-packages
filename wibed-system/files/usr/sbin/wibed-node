@@ -616,6 +616,8 @@ mountedOverlay = tonumber(getOverlay())
 coordx = readVariable("general.coordx")
 coordy = readVariable("general.coordy")
 coordz = readVariable("general.coordz")
+testbed = readVariable("location.testbed")
+is_gw = readVariable("management.is_gw")
 
 request = {}
 
@@ -627,6 +629,8 @@ if status == INIT then
     request["coordx"] = coordx
     request["coordy"] = coordy
     request["coordz"] = coordz
+    request["testbed"] = testbed
+    request["gateway"] = is_gw
 
 elseif status == IDLE or status == RUNNING or status == ERROR then
     if commandAck then

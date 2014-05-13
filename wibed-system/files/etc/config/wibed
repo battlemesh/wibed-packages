@@ -11,6 +11,7 @@ config wibed general
     option api_url 'http://wibed.confine-project.eu/'  # <URL> HTTP URL for the controller API
 
 config wibed 'location'
+    option testbed 'Wibed-UPC'			# <string> Testbed description. This information will sort the nodes in the server. Use an comprehensive name.
     option building 'C6'			# <string> Building short information
     option floor 'E1'				# <string> Floor short information
     option room '104'				# <string> Room short information
@@ -39,7 +40,6 @@ config wibed management
     option ipv4_net '10.99.R1.R2' 
     option ipv6_net 'fdba:99:R1R2::1/64'
     option ipv4_lan_net '192.168.R2.1'
-    option country 'US'
     option txpower2 '30'
     option txpower5 '20'
     option is_gw '0'
