@@ -34,13 +34,13 @@ config wibed management
     list ifaces 'eth0.1'
     list ifaces 'radio0/radio1'					# It is not recommended to use Radio2 (2.4GHz) as the adhoc mgmt Radio
     option channel5 '36'						# <int> Wireless channel (in the 5GHz band)
-    option channel2 '11'						# <int> Wireless channel (in the 2.4GHz band)
+    option channel2 '13'						# <int> Wireless channel (in the 2.4GHz band)
     option bssid '02:C0:FF:EE:C0:DE'			# <hex string> MAC address (which?)
     option ssid 'wibed'							# <string> Wireless Identificator string
     option ipv4_net '10.99.R1.R2' 
     option ipv6_net 'fdba:99:R1R2::1/64'
     option ipv4_lan_net '192.168.R2.1'
-    option txpower2 '30'
+    option txpower2 '22'
     option txpower5 '20'
     option is_gw '0'
 
