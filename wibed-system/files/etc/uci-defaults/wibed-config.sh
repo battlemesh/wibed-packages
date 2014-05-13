@@ -1,5 +1,7 @@
 #!/bin/sh
 
+[ -f /usr/bin/apply_reghack ] && /usr/bin/apply_reghack
+
 for device in /dev/sd*; do
     if [ -b $device ]; then
         #blkid -t LABEL=wibed-overlay ${device}1 >/dev/null && continue

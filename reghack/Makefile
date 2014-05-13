@@ -38,6 +38,7 @@ endef
 define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/reghack $(1)/usr/bin/reghack
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/reghack.sh $(1)/usr/bin/apply_reghack
 endef
 
 define Package/$(PKG_NAME)/postinst
