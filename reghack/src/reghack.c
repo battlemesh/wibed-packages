@@ -390,3 +390,53 @@ int main(int argc, char **argv)
 
 	return 0;
 }
+ (j = 0; j < sizeof(search_insns)/sizeof(search_insns[0]); j++)
+			{
+				if (search_insns[j].machine != ath_ko_machine)
+					continue;
+
+				if (!patch_insn(map + i, &search_insns[j]))
+				{
+					printf("Patching @ 0x%08x: %s\n", i, search_insns[j].desc);
+					found = 1;
+				}
+			}
+		}
+
+		for (j = 0; j < (sizeof(search_regdomains)/sizeof(search_regdomains[0])); j++)
+		{
+			if (!patch_regdomain(map + i, &search_regdomains[j].reg))
+			{
+				printf("Patching @ 0x%08x: %s\n", i, search_regdomains[j].desc);
+				found = 1;
+			}
+		}
+	}
+
+	if (munmap(map, sz))
+	{
+		perror("munmap()");
+		exit(1);
+	}
+
+	if (tmp)
+	{
+		if (found)
+		{
+			sprintf(cmd, "cp %s %s", tmp, argv[1]);
+			system(cmd);
+		}
+
+		unlink(tmp);
+	}
+
+	close(fd);
+
+	if (!found)
+	{
+		printf("Unable to find regulatory rules (already patched?)\n");
+		exit(1);
+	}
+
+	return 0;
+}
