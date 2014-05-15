@@ -250,7 +250,6 @@ local function set_system()
 
 	-- Setting model name
 	x:set(ucic,"upgrade","model",get_model())
-	x:set(ucic,"general","status","1")
 	x:set(ucic,"general","node_id",hostname)
 end
 
