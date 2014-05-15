@@ -335,7 +335,8 @@ local function set_mgmt_wifi()
 			if mrate ~= nil then
 				x:set("wireless", i, "mcast_rate", mrate)
 				printf("-> Using multicast rate %s", mrate)
-				
+			end
+
 			x:set("wireless", id, "wifi-iface")
 			x:set("wireless", id, "hidden", 1)
 			x:set("wireless", id, "ssid", generate_ssid())
