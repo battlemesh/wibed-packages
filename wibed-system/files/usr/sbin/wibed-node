@@ -414,8 +414,8 @@ function doPrepareFirmwareUpgrade(version, hash, upgradeTime)
 
     if success and statusCode == 200 then
 	    status = UPGRADING
-        executeCommand(string.format("echo \"%s  wibed.bin\" > /tmp/%s.md5", hash, version ))
-        writeFile("/root/wibed.upgrade.version",version)
+            writeFile("/root/wibed.upgrade.lasthash",hash)
+            writeFile("/root/wibed.upgrade.version",version)
 	    print(string.format("Start UPGRADING process in the next wibed-node call"))
     else
         print(string.format("Downloading of firmware failed: %s", statusCode))
@@ -430,20 +430,26 @@ end
 -- Start the firmware upgrade process.
 --
 function doFirmwareUpgrade() 
-    print(string.format("Attempting firmware upgrade"))
-	local oldVersion = readVariable("upgrade.version")
-	local upVersion = readFile("/root/wibed.upgrade.version")
-	writeVariable("upgrade.version", upVersion)
+	print(string.format("Attempting firmware upgrade"))
+	local oldVersion = readVariable("upgrade.version") or nil
+	local upVersion = readFile("/root/wibed.upgrade.version") or nil
+	local hash = readFile("/root/wibed.upgrade.lasthash") or nil
+
+	if hash == nil or #hash < 8 then
+		status = ERROR
+		print(string.format("Failed to upgrade to version %s, hash file does not exist", upVersion))
+		sendError()
+		return 1
+	end
+	
 	-- Execute the upgrade script
 	print(string.format("Executing the upgrade script"))
-	local exitCode, _ = executeCommand(string.format("/usr/sbin/wibed-upgrade %s" , upVersion ))
-	if exitCode == "1" then
-		status = ERROR
-		print(string.format("Failed to upgrade to version: %s ", upVersion))
-		-- Restore the old version number
-		writeVariable("upgrade.version", oldVersion)
-		sendError()
-		-- Fall to error state
+	local exitCode, _ = executeCommand(string.format("/usr/sbin/wibed-upgrade %s %s" , upVersion, hash ))
+
+	if exitCode ~= "0" then
+		status = IDLE
+		writeVariable("general.status", status)
+		print(string.format("Failed to upgrade to version %s, going back to IDLE state", upVersion))
 		return 1
 	end
 end

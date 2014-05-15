@@ -1,21 +1,15 @@
 #!/bin/sh
 
-VERSION=$1
-
-cd /tmp/
-md5sum -sc ${VERSION}.md5
-if [ "$?" == 0 ] ; then
-output = $(uci get wibed.upgrade.version)
-    if [ VERSION -eq output] ; then
-        echo "FAILED TO UPGRADE. CURRENT VERSION AND UPGRADE VERSION ARE THE SAME."
-	uci set wibed.general.status=8
-	return 1
-    else
-        echo "UPGRADE"
-        sysupgrade -n wibed.bin
-    fi
-else
-    echo "FAILED TO UPGRADE"
-    return 1
+VERSION="$1"
+HASH="$2"
+MYHASH="$(md5sum /tmp/wibed.bin | awk '{print $1}')"
+if [ "$HASH" == "$MYHASH" ] ; then
+        echo "UPGRADING"
+        sysupgrade -n /tmp/wibed.bin &
+	sleep 1
+	return 0
 fi
-return 0
+
+echo "FAILED TO UPGRADE"
+rm -f /tmp/wibed.bin
+return 1
