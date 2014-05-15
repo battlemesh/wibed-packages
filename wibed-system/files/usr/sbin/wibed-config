@@ -172,6 +172,7 @@ local function set_batadv(dev)
 	local ifn = "bat"..dev
 	x:set("batman-adv","bat0","mesh")
 	x:set("batman-adv","bat0","bridge_loop_avoidance","1")
+	x:set("batman-adv","bat0","orig_interval","5000")
 	x:set("network",ifn,"interface")
 --	x:set("network",ifn,"ifname",dev)
 	x:set("network",ifn,"proto","batadv")
