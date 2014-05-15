@@ -1,22 +1,22 @@
 
 config wibed general
-    option node_id '00ff'                       # <INT hex> Based on CRC16 hash from MAC address (2 bytes hex)
-    option recovery_timer '00'                  # <INT> Time (in seconds) to ??
-    option last_cmd_id '0'                      # <int> ??
-    option command_id '00'                      # <int> Identificator of the current command
-    option status '0'  
-    option coordx '41.38953'                    # <float> Longitude coordinates of the node
-    option coordy '2.11306'                     # <float> Latitude coordinates of the node
-    option coordz '2'                           # <int> Elevation of the node (Floor number)
-    option api_url 'http://wibed.confine-project.eu/'  # <URL> HTTP URL for the controller API
+    option node_id '00ff'						# <INT hex> Based on CRC16 hash from MAC address (2 bytes hex)
+    option recovery_timer '00'					# <INT> Time (in seconds) to ??
+    option last_cmd_id '0'
+    option command_id '00'						# <int> Identificator of the current command
+    option status '0'
+    option coordx '41.38953'					# <float> Longitude coordinates of the node
+    option coordy '2.11306'						# <float> Latitude coordinates of the node
+    option coordz '2'							# <int> Elevation of the node (Floor number)
+    option api_url 'http://wibed.confine-project.eu/' # <URL> HTTP URL for the controller API
 
 config wibed 'location'
-    option testbed 'wbm'			# <string> Testbed description. This information will sort the nodes in the server. Use an comprehensive name.
-    option building 'C6'			# <string> Building short information
-    option floor 'E1'				# <string> Floor short information
-    option room '104'				# <string> Room short information
-    option situation 'Eloi desktop'		# <string> Emplacement short description
-    option description 'Beside the computer' 	# <string> Long description of the node's emplacement
+    option testbed 'wbm'						# <string> Testbed description. This information will sort the nodes in the server. Use an comprehensive name.
+    option building 'C6'						# <string> Building short information
+    option floor 'E1'							# <string> Floor short information
+    option room '104'							# <string> Room short information
+    option situation 'Unknown'					# <string> Emplacement short description
+    option description 'Unkown' 				# <string> Long description of the node's emplacement
 
 config wibed experiment
     option exp_id '0000'                        # <int> The current experiment identifier
@@ -24,24 +24,24 @@ config wibed experiment
     option save_url 'http://wibed.confine-project.eu/api/results'  # <URL> HTTP URL to push (rsync) the /save files during the experiment
 
 config wibed upgrade
-    option version '01'                         # <int> ??
-    option model ''
-    option auto '0'                             # <bool> ??
+    option version '01'                         # <int> current version
+    option model ''								# <string> router model type
+    option auto '0'                             # <bool> enable autoupgrade (not implemented yet)
     option upg_url 'http://'                    # <url> The HTTP URL of the new firmware
     option upg_timer 'http://'                  # <timer> Timer until the upgrade should start
 
 config wibed management
-    list ifaces 'eth0.1'
-    list ifaces 'radio0/radio1'					# It is not recommended to use Radio2 (2.4GHz) as the adhoc mgmt Radio
+    list ifaces 'eth0.1'						# List of interfaces used for management network
+    list ifaces 'radio0/radio1'					#   dev2/dev1 means use dev2 if exist else dev1
     option channel5 '36'						# <int> Wireless channel (in the 5GHz band)
     option channel2 '6'							# <int> Wireless channel (in the 2.4GHz band)
     option bssid '02:C0:FF:EE:C0:DE'			# <hex string> MAC address (which?)
-    option ssid 'wibed'							# <string> Wireless Identificator string
-    option ipv4_net '10.99.R1.R2' 
-    option ipv6_net 'fdba:99:R1R2::1/64'
-    option ipv4_lan_net '192.168.R2.1'
-    option txpower2 '17'
+    option ssid 'wibed'							# <string> ssid for the management network
+    option ipv4_net '10.99.R1.R2' 				# IPv4 used for the management network (R1 and R2 are last 16 bits from MAC)
+    option ipv6_net 'fdba:99:R1R2::1/64'		# IPv6 used for the management network
+    option ipv4_lan_net '192.168.R2.1'			# Lan network if it is gateway
+    option txpower2 '17'						# Transmit power for the wifi devices
     option txpower5 '20'
-	option mrate '12000'
-    option is_gw '0'
+	option mrate '12000'						# Multicast Rate for the management wifi network
+    option is_gw '0'							# Set to 1 if the node is acting as gateway
 
