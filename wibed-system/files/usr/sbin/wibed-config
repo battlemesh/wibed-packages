@@ -283,6 +283,7 @@ local function set_mgmt_wifi()
 	local channel5 = assert(x:get(ucic, "management", "channel5"))
 	local txpower2 = x:get(ucic, "management", "txpower2") or "30"
 	local txpower5 = x:get(ucic, "management", "txpower5") or "20"
+	local mrate = x:get(ucic, "management", "mrate") or nil
 	local countrycode = x:get(ucic, "management", "country") or nil
 	local channel2 = assert(x:get(ucic, "management", "channel2"))
 	local i,_
@@ -321,15 +322,19 @@ local function set_mgmt_wifi()
 
 			x:set("wireless", i, "disabled", 0)
 			if is_5ghz then
-                                x:set("wireless", i, "txpower", txpower5)
+				x:set("wireless", i, "txpower", txpower5)
 				printf("-> Using txpower %s for 5GHz", txpower5)
-                        else
-                                x:set("wireless", i, "txpower", txpower2)
+			else
+				x:set("wireless", i, "txpower", txpower2)
 				printf("-> Using txpower %s for 2GHz", txpower2)
-                        end
+			end
 			if countrycode ~= nil then
 				x:set("wireless", i, "country", countrycode)
+				printf("-> Using countrycode %s", countrycode)
 			end
+			if mrate ~= nil then
+				x:set("wireless", i, "mcast_rate", mrate)
+				printf("-> Using multicast rate %s", mrate)
 				
 			x:set("wireless", id, "wifi-iface")
 			x:set("wireless", id, "hidden", 1)

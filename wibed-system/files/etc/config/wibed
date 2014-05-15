@@ -42,5 +42,6 @@ config wibed management
     option ipv4_lan_net '192.168.R2.1'
     option txpower2 '17'
     option txpower5 '20'
+	option mrate '12000'
     option is_gw '0'
 
