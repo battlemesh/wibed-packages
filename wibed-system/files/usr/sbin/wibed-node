@@ -630,6 +630,16 @@ request = {}
 request["status"] = status
 
 if status == INIT then
+
+    -- Check the version (prevent to send a wrong version when failed to upgrade the firmware)
+    local _, tailfirmv = executeCommand("tail -n 1 /etc/wibed.version",true)
+    local firmv = string.sub(tailfirmv, 1, 8)
+
+    if version ~= firmv then
+        writeVariable("upgrade.version", firmv)
+        version = firmv
+    end
+
     request["model"] = model
     request["version"] = version
     request["coordx"] = coordx
