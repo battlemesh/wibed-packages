@@ -8,7 +8,7 @@ usage () {
         echo "-h --help: This help"
         echo "-hs --help-status: Information about wibed status numeration and description"
         echo "-s [0-8]: set the wibed status. Use wibed-reset -hs to obtain a further information about wibed status."
-        echo "-d: resets the status to its original value"
+        echo "-d: resets the status to the idle state."
         echo ""
 }
 
@@ -28,25 +28,31 @@ status_usage () {
         echo ""
 }
 
-if [ "$#" == 0 ] ; then
-        STATUS=`uci get wibed.general.status`
 
-        if [ "$STATUS" == 1 ] || [ "$STATUS" == 8 ] ; then
+if [ $# -eq 0 ] ; then
+        STATUS=`uci get wibed.general.status`
+        if [ $STATUS -eq 1 ] || [ $STATUS -eq 8 ] ; then
                 uci get wibed.general.commandAck
-                if [ "$?" == 0 ] ; then
+                if [ $? -eq 0 ] ; then
                         uci delete wibed.general.commandAck
                 fi
                 uci get wibed.general.resultAck
-                if [ "$?" == 0 ] ; then
+                if [ $? -eq 0 ] ; then
                         uci delete wibed.general.resultAck
                 fi
                 uci set wibed.general.status=0
                 rm -rf /root/results/*
+        elif [ $STATUS -lt 0 ] || [ $STATUS -gt 8 ] ; then
+                echo "The status: $STATUS is invalid. Reverting to initial state."
+                uci set wibed.general.status=0
+                exit 1
+        elif [ $STATUS -eq 0 ] ; then
+                exit 0
         else
-                echo "Could not reset"
+                echo "Could not reset. Contact the administrator of the testbed."
                 exit 1
         fi
-elif [ "$#" == 1 ] ; then
+elif [ $# -eq 1 ] ; then
         if [ "$1" == "-h" -o "$1" == "--help" ] ; then
                 usage
         elif [ "$1" == "-d" ] ; then
@@ -56,15 +62,16 @@ elif [ "$#" == 1 ] ; then
         else
                 usage
         fi
-elif [ "$#" == 2 ] ; then
+elif [ $# -eq 2 ] ; then
         if [ "$1" == "-s" ] ; then
-                if [ "$2" >= 0 -a "$2" <= 8 ] ; then
+                if [ $2 -ge 0 ] && [ $2 -le 8 ] ; then
                         uci set wibed.general.status=$2
                 else
-                        usage
+                        echo""
+                        echo "$2 is not a valid status. Valid status are:"
+                        status_usage
                 fi
         else
                 usage
         fi
 fi
-
