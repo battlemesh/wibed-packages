@@ -34,6 +34,7 @@ if [ $(cat /tmp/wibed-status.watchdog | wc -l) -gt 60 ]; then
 	echo "Restoring defaults..." 
 #	/sbin/firstboot -y
 	rm -rf /tmp/usb-overlay/*
+	rm -rf /tmp/flash-overlay/*
 	rm -rf /overlay/*
 	sync
 	sleep 1
