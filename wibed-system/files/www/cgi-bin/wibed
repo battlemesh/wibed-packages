@@ -1,0 +1,33 @@
+#!/bin/sh
+echo "Content-type: text/html"
+echo ""
+
+echo "<h1>$(cat /proc/sys/kernel/hostname)</h1>"
+
+echo "<h3>Version</h3>"
+cat /etc/wibed.version
+echo "<hr>"
+
+echo "<h3>Interfaces</h3>"
+echo "<pre>"
+batctl if
+echo "</pre>"
+echo "<hr>"
+
+echo "<h3>Nodes</h3>"
+echo "<pre>"
+batctl o
+echo "</pre>"
+echo "<hr>"
+
+echo "<h3>Status</h3>"
+echo "<pre>"
+uci show wibed.general
+echo "</pre>"
+echo "<hr>"
+
+echo "<h3>WiFi</h3>"
+echo "<pre>"
+iwinfo
+echo "</pre>"
+echo "<hr>"
