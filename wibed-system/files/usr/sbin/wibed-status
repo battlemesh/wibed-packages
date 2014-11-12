@@ -24,6 +24,16 @@ if [ -f "/tmp/wibed-status.tmp" ]; then
 	echo default-on > ${DEFAULT_SERVER_LED}/trigger
 	echo "" > /tmp/wibed-status.watchdog
 	RETURN=0
+	if [ "$(uci get wibed.general.status)" == "8" ]; then
+		echo "[Warning] Node is in ERROR state"
+		echo "." >> /tmp/wibed-error-status.watchdog
+		if [ $(cat /tmp/wibed-error-status.watchdog | wc -l) -gt 10 ]; then
+			echo "[Warning] Forcing node to go IDLE status"
+			wibed-reset -d
+		fi
+	else
+		echo "" > /tmp/wibed-error-status.watchdog
+	fi
 else
 	echo timer > ${DEFAULT_SERVER_LED}/trigger
 	echo "." >> /tmp/wibed-status.watchdog
