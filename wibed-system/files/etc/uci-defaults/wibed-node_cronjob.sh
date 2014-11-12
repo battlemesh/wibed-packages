@@ -7,7 +7,7 @@ if ! ( grep -q "/usr/sbin/wibed-node" /etc/crontabs/root 2>/dev/null ) ; then
 	echo "* * * * * (sleep $((15+$TIME)) ; /usr/sbin/wibed-node >> /tmp/wibed-node.log)" >> /etc/crontabs/root
 	echo "* * * * * (sleep $((30+$TIME)) ; /usr/sbin/wibed-node >> /tmp/wibed-node.log)" >> /etc/crontabs/root
 	echo "* * * * * (sleep $((45+$TIME)) ; /usr/sbin/wibed-node >> /tmp/wibed-node.log)" >> /etc/crontabs/root
-	echo "* * * * * (sleep $((5+$TIME)) /usr/sbin/wibed-status > /root/wibed-status.log)" >> /etc/crontabs/root
+	echo "* * * * * (sleep $((5+$TIME)) ; /usr/sbin/wibed-status > /root/wibed-status.log)" >> /etc/crontabs/root
 	/etc/init.d/cron enable
 	/etc/init.d/cron restart
 fi
