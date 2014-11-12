@@ -9,6 +9,7 @@ usage () {
         echo "-hs --help-status: Information about wibed status numeration and description"
         echo "-s [0-8]: set the wibed status. Use wibed-reset -hs to obtain a further information about wibed status."
         echo "-d: resets the status to the idle state."
+        echo "-f: hard reset the node (remove overlays)"
         echo ""
 }
 
@@ -59,6 +60,14 @@ elif [ $# -eq 1 ] ; then
                 uci set wibed.general.status=1
         elif [ "$1" == "-hs" -o "$1" == "--help-status" ] ; then
                 status_usage
+        elif [ "$1" == "-f" ] ; then
+                echo "Removing overlays and rebooting the node..."
+                rm -rf /tmp/usb-overlay/*
+                rm -rf /tmp/flash-overlay/*
+                rm -rf /overlay/*
+                sync
+                sleep 1
+                /sbin/reboot -f
         else
                 usage
         fi
