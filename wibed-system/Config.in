@@ -1,0 +1,59 @@
+# Wibed-packages Configuration
+menu "Configuration"
+
+    config WIBED_SYSTEM_SERVER
+        string
+        prompt "Server"
+        default "http://wibed.confine-project.eu/"
+        help
+            Choose the server
+
+    config WIBED_SYSTEM_TESTBED
+        string
+        prompt "Testbed Name"
+        default "wibed"
+        help
+            Provide testbed name
+    
+    menu "Management Network Configuration"
+    
+        config WIBED_SYSTEM_GW
+            bool "Is Gateway"
+            default n
+            help
+                Is the node going to be a gateway...
+        
+        config WIBED_SYSTEM_MGMT_SSID
+            string
+            prompt "Mgmt Network SSID"
+            default "wibed"
+            help
+                Provide mgmt network SSID
+
+        config WIBED_SYSTEM_MGMT_BSSID
+            string
+            prompt "Mgmt Network BSSID"
+            default "02:C0:FF:EE:C0:DE"
+            help
+                Provide mgmt network BSSID, in case that batAdv all devices with same
+                BSSID will belong to the same mgmt network
+    
+        choice
+            prompt "Mmgt network iface priority"
+            default WIBED_SYSTEM_MGMT_1
+            help
+                The first interface wil be the mgmt iface if it is functional
+                Orelse the second one. For TL-WDR4300 radio0 is on 5GHz and 
+                radio1 is on 2.4GHz
+
+        config WIBED_SYSTEM_MGMT_5
+            bool "radio0/radio1"
+
+        config WIBED_SYSTEM_MGMT_24
+            bool "radio1/radio0"
+
+        endchoice
+
+    endmenu
+
+endmenu

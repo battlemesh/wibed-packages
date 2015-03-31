@@ -29,9 +29,10 @@ include $(INCLUDE_DIR)/package.mk
 
 define Package/wibed-system
   SECTION:=net
-  CATEGORY:=Base system
+  CATEGORY:=WiBed
   TITLE:=Basic system requirements for Wibed
   URL:=http://confine-project.eu
+  MENU:=1
   DEPENDS:= \
 	+usbutils +sfdisk +e2fsprogs +sysfsutils +block-mount \
 	+kmod-usb-storage +kmod-usb-uhci +kmod-usb2 +kmod-usb-ohci +kmod-usb-core \
@@ -43,6 +44,10 @@ define Package/wibed-system
 	+openssh-client +luci-lib-libremap \
 	+luci-lib-libremap-location +luci-lib-libremap-system +luci-lib-libremap-wireless \
 	+luasocket +kmod-batman-adv +batctl +uhttpd
+endef
+
+define Package/wibed-system/config
+	source "$(SOURCE)/Config.in"
 endef
 
 define Package/wibed-system/description
@@ -63,11 +68,59 @@ endef
 define Build/Compile
 endef
 
+WIBED_SYSTEM_SERVER:=$(if $(CONFIG_WIBED_SYSTEM_SERVER),\
+	$(CONFIG_WIBED_SYSTEM_SERVER),\
+	$(strip http://wibed.confine-project.eu))
+
+WIBED_SYSTEM_TESTBED:=$(if $(CONFIG_WIBED_SYSTEM_TESTBED),\
+	$(CONFIG_WIBED_SYSTEM_TESTBED),\
+	$(strip wibed))
+
+WIBED_SYSTEM_MGMT_SSID:=$(if $(CONFIG_WIBED_SYSTEM_MGMT_SSID),\
+	$(CONFIG_WIBED_SYSTEM_MGMT_SSID),\
+	$(strip wibed))
+
+WIBED_SYSTEM_MGMT_BSSID:=$(if $(CONFIG_WIBED_SYSTEM_MGMT_BSSID),\
+	$(CONFIG_WIBED_SYSTEM_MGMT_BSSID),\
+	$(strip "02:C0:FF:EE:C0:DE"))
+
+ifdef CONFIG_WIBED_SYSTEM_MGMT_5
+	WIBED_SYSTEM_MGMT:="radio0/radio1"
+endif
+
+ifdef CONFIG_WIBED_SYSTEM_MGMT_24
+	WIBED_SYSTEM_MGMT:="radio1/radio0"
+endif
+
+ifdef CONFIG_WIBED_SYSTEM_GW
+	WIBED_SYSTEM_GW:="1"
+else
+	WIBED_SYSTEM_GW:="0"
+endif
+
+#$(SED) "s~.*option api_url.*~\t option api_url \'$(strip $(WIBED_SYSTEM_SERVER))\'~g"\
+#		"$(1)/etc/wibed.default-config")
+
 define Package/wibed-system/install
 	$(CP) ./files/* $(1)/
+	$(if $(CONFIG_WIBED_SYSTEM_SERVER),\
+		$(SED) "s~.*option api_url.*~\t option api_url \'$(strip $(WIBED_SYSTEM_SERVER))\'~g"\
+		"$(1)/etc/wibed.default-config")
+	$(SED) "s~.*option save_url.*~\t option save_url \'$(strip $(WIBED_SYSTEM_SERVER))api/results\'~g"\
+		"$(1)/etc/wibed.default-config"
+	$(SED) "s~.*option testbed.*~\t option testbed \'$(strip $(WIBED_SYSTEM_TESTBED))\'~g"\
+		"$(1)/etc/wibed.default-config"
+	$(SED) "s~.*option ssid.*~\t option ssid \'$(strip $(WIBED_SYSTEM_MGMT_SSID))\'~g"\
+		"$(1)/etc/wibed.default-config"
+	$(SED) "s~.*option bssid.*~\t option bssid \'$(strip $(WIBED_SYSTEM_MGMT_BSSID))\'~g"\
+		"$(1)/etc/wibed.default-config"
+	$(SED) "s~.*list ifaces.*radio.*~\t list ifaces \'$(WIBED_SYSTEM_MGMT)\'~g"\
+		"$(1)/etc/wibed.default-config"
+	$(SED) "s~.*option is_gw.*~\t option is_gw \'$(WIBED_SYSTEM_GW)\'~g"\
+		"$(1)/etc/wibed.default-config"
 	$(INSTALL_DIR) $(1)/save
 	echo "$(TIMESTAMP)" > $(1)/etc/wibed.version
-	echo "$(GIT_BRANCH)" >> $(1)/etc/wibed.version	
+	echo "$(GIT_BRANCH)" >> $(1)/etc/wibed.version
 	echo "$(GIT_HASH)" >> $(1)/etc/wibed.version
 endef
 
