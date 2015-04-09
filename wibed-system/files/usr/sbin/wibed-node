@@ -600,6 +600,25 @@ function executeCommands(commands)
     writeVariable("general.commandAck", lastCommandId)
 end
 
+-- Function: getGwMgmtAddress()
+--
+-- Get the ipv6 address of the mgmt
+-- network gateway
+--
+function getGwMgmtAddress()
+	local _, gw = executeCommand(string.format("batctl gwl | grep '=>' | awk ' {print $2}'"))
+	return gw
+end
+
+-- Function: getMgmtAddress()
+--
+-- return's node's MAC address for mgmg0 interface
+--
+
+function getMgmtAddress()
+	local _, mymac = executeCommand(string.format("cat /sys/class/net/mgmt0/address"))
+	return mymac
+end
 
 apiUrl = assert(readVariable("general.api_url"), "API URL not defined")
 print(string.format("API URL: %s", apiUrl))
@@ -624,6 +643,8 @@ coordy = readVariable("general.coordy")
 coordz = readVariable("general.coordz")
 testbed = readVariable("location.testbed")
 is_gw = readVariable("management.is_gw")
+gw_mgmt_address= getGwMgmtAddress()
+mgmt_address = getMgmtAddress()
 
 request = {}
 
@@ -647,6 +668,8 @@ if status == INIT then
     request["coordz"] = coordz
     request["testbed"] = testbed
     request["gateway"] = is_gw
+    request["gwaddress"] = gw_mgmt_address
+    request["address"] = mgmt_address
 
 elseif status == IDLE or status == RUNNING or status == ERROR then
     if commandAck then
