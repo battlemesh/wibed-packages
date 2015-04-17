@@ -43,7 +43,7 @@ define Package/wibed-system
 	+iw +mtr +ip +coreutils +coreutils-timeout +lua-curl \
 	+openssh-client +luci-lib-libremap \
 	+luci-lib-libremap-location +luci-lib-libremap-system +luci-lib-libremap-wireless \
-	+luasocket +kmod-batman-adv +batctl +uhttpd
+	+luasocket +kmod-batman-adv +batctl +uhttpd +firewall
 endef
 
 define Package/wibed-system/config
