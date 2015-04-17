@@ -167,6 +167,17 @@ local function split_ifaces(ifaces)
 	return et,wi
 end
 
+local fwDelRules = {'Allow-DHCP-Renew', 'Allow-Ping', 'Allow-DHCPv6', 'Allow-ICMPv6-Input', 'Allow-ICMPv6-Forward'}
+local function ftToDel(rule)
+    for _,name in pairs(fwDelRules) do
+        if name == rule then
+            return true
+        end
+    end
+    return false
+end
+
+
 local function set_batadv(dev)
 	printf("-> Configuring batman-adv for %s ",dev)
 	local ifn = "bat"..dev
@@ -224,6 +235,22 @@ local function set_mgmt_lan()
 				 x:set("firewall",s[".name"],"network",{"mgmt_lan"})
 			end
 		end)
+        
+        -- Disable uneccesary default firewall rules
+        x:foreach("firewall","rule",function(s)
+            if ftToDel(x.get("firewall",s[".name"],"name")) then
+                x:set("firewall",s[".name"],"enabled", "0")
+            end
+        end)
+
+        -- Add rule for blcoking dns amplification (dnsmasq)
+        local rule = x:add("firewall","rule")
+        x:set("firewall",rule,"name","Deny-WAN-DNS")
+        x:set("firewall",rule,"src","wan")
+        x:set("firewall",rule,"dest_port","53")
+        x:set("firewall",rule,"proto","udp")
+        x:set("firewall",rule,"target","REJECT")
+
 	else
 		-- BATMANT-ADV CLIENT CONFIGURATION:
                 x:set("batman-adv", "bat0", "gw_mode", "client")
