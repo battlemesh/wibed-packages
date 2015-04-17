@@ -237,20 +237,26 @@ local function set_mgmt_lan()
 		end)
         
         -- Disable uneccesary default firewall rules
+        local bool = 0
         x:foreach("firewall","rule",function(s)
             if ftToDel(x.get("firewall",s[".name"],"name")) then
                 x:set("firewall",s[".name"],"enabled", "0")
             end
+            if x.get("firewall",s[".name"],"name") == "Deny-WAN-DNS" then
+                bool = 1
+            end
         end)
 
         -- Add rule for blcoking dns amplification (dnsmasq)
-        local rule = x:add("firewall","rule")
-        x:set("firewall",rule,"name","Deny-WAN-DNS")
-        x:set("firewall",rule,"src","wan")
-        x:set("firewall",rule,"dest_port","53")
-        x:set("firewall",rule,"proto","udp")
-        x:set("firewall",rule,"target","REJECT")
-
+        -- if it doesnt exist yet
+        if bool == 0 then
+            local rule = x:add("firewall","rule")
+            x:set("firewall",rule,"name","Deny-WAN-DNS")
+            x:set("firewall",rule,"src","wan")
+            x:set("firewall",rule,"dest_port","53")
+            x:set("firewall",rule,"proto","udp")
+            x:set("firewall",rule,"target","REJECT")
+        end
 	else
 		-- BATMANT-ADV CLIENT CONFIGURATION:
                 x:set("batman-adv", "bat0", "gw_mode", "client")
