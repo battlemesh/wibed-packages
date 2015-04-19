@@ -101,6 +101,7 @@ local function get_bssid()
 	return x:get(ucic, "management","bssid") or "02:CA:FF:EE:BA:BE"
 end
 
+
 local function printf(fmt, ...)
 	print(string.format(fmt, ...))
 end
@@ -323,13 +324,12 @@ local function set_mgmt_wifi()
 	local i,_
 	local _,ifaces = split_ifaces(x:get(ucic, "management", "ifaces"))
 	local wifi_num = 0
+    local proto = x:get(ucic,"management","l2proto") or "adhoc"
 
 	for _,i in ipairs(ifaces) do
 		print("-> Interface " .. i)
 		local id = string.format("mgmt%d", wifi_num)
-		local id2 = string.format("mgmt%db", wifi_num)
 		local net = "bat"..id
-		local net2 = "bat"..id2
 
 		local t = iw.type(i)
 		if t then
@@ -373,27 +373,34 @@ local function set_mgmt_wifi()
 				printf("-> Using multicast rate %s", mrate)
 			end
 
-			x:set("wireless", id, "wifi-iface")
-			x:set("wireless", id, "hidden", 1)
-			x:set("wireless", id, "ssid", generate_ssid())
-			x:set("wireless", id, "bssid", get_bssid())
-			x:set("wireless", id, "device", i)
-			x:set("wireless", id, "network", net)
-			x:set("wireless", id, "mode", "adhoc")
-			x:set("wireless", id, "ifname", id)
-
-			x:set("wireless", id2, "wifi-iface")
-			x:set("wireless", id2, "hidden", 1)
-			x:set("wireless", id2, "device", i)
-			x:set("wireless", id2, "ssid", generate_ssid())
-			x:set("wireless", id2, "network", net2)
-			x:set("wireless", id2, "mode", "mesh")
-			x:set("wireless", id2, "mesh_id", "wibed")
-			x:set("wireless", id2, "mesh_fwding", 0)
-			x:set("wireless", id2, "ifname", id2)
+            if proto == "adhoc" then
+                printf("-> Chosen batman-adv for L2 mgmt protocol")
+			    x:set("wireless", id, "wifi-iface")
+			    x:set("wireless", id, "hidden", 1)
+			    x:set("wireless", id, "ssid", generate_ssid())
+			    x:set("wireless", id, "bssid", get_bssid())
+			    x:set("wireless", id, "device", i)
+			    x:set("wireless", id, "network", net)
+			    x:set("wireless", id, "mode", "adhoc")
+			    x:set("wireless", id, "ifname", id)
+			elseif proto == "mesh" then
+                printf("-> Chosen 802.11s for L2 mgmt protocol")
+			    if x:get("wireless",i,"type") ~= "mac80211" then
+			        printf("-> Error, device %s does not support 802.11s", i)
+                    error()
+                end
+			    x:set("wireless", id, "wifi-iface")
+			    x:set("wireless", id, "hidden", 1)
+			    x:set("wireless", id, "device", i)
+			    x:set("wireless", id, "ssid", generate_ssid())
+			    x:set("wireless", id, "network", net)
+			    x:set("wireless", id, "mode", "mesh")
+			    x:set("wireless", id, "mesh_id", "wibed")
+			    x:set("wireless", id, "mesh_fwding", 0)
+			    x:set("wireless", id, "ifname", id)
+            end
 
 			set_batadv(id)
-			set_batadv(id2)
 	
 			wifi_num = wifi_num + 1
 		else 
