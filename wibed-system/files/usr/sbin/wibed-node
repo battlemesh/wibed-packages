@@ -639,6 +639,15 @@ function sendRestore(nodeid, reset)
         end
 end
 
+-- Acquire the lock before proceeding any further
+-- Guarantees only one script execution at a time
+os.execute(string.format("lock -w /tmp/wibed-node-lock; lock /tmp/wibed-node-lock"))
+
+print("---------------------------------------")
+_, date = executeCommand(string.format("date"))
+print(date)
+print("---------------------------------------")
+
 apiUrl = assert(readVariable("general.api_url"), "API URL not defined")
 print(string.format("API URL: %s", apiUrl))
 id = assert(readVariable("general.node_id"), "Node ID not defined")
@@ -825,3 +834,8 @@ if responseBody and statusCode == 200 then
 else
     print(string.format("Communication with server unsuccessful: %s", statusCode))
 end
+
+-- Release the lock
+--
+os.execute(string.format("lock -u /tmp/wibed-node-lock"))
+

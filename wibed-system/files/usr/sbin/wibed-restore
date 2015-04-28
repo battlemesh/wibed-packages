@@ -96,6 +96,9 @@ function restoreCheck()
         if msg~=nil then
                 restore, _, reset, _ = alfMsgFind(msg, nodeid)
                         if restore == "RESTORE" then
+				os.execute(string.format("echo '---------------------------------------'"))
+				os.execute(string.format("echo $(date)"))
+				os.execute(string.format("echo '---------------------------------------'"))
                                 if reset == "RESET" then
 					os.execute(string.format("echo 'Recieved RESTORE command'"))
                                         -- Send ACK to the GW
