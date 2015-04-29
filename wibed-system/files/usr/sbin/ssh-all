@@ -19,9 +19,12 @@ shift
 
 TMP="/tmp/wibed"
 
+INT=${INT:-mgmt0}
+MYLOCALLINK="$(ip addr show dev $INT | grep -e "inet6.*scope link" | awk '{print $2}' | cut -d/ -f1)"
+
 echo "Discovering nodes..."
 ping6 ff02::2%$I -c 5 -i 1 -s 16 | grep "^24" > $TMP.nodes.tmp
-cat $TMP.nodes.tmp  | awk '{print $4}' | sed s/":$"//g | sort -u > $TMP.nodes
+cat $TMP.nodes.tmp  | awk '{print $4}' | sed s/":$"//g | grep -v "${MYLOCALLINK}" | sort -u > $TMP.nodes
 echo "-------------------------"
 cat $TMP.nodes
 echo "-------------------------"
