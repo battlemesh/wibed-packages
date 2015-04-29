@@ -1,0 +1,63 @@
+#!/bin/sh
+
+[ -z "$2" ] && {
+    echo "This script executes commands and copy files to all nodes"
+    echo "connected to a network interface (link-local connection)."
+    echo "It uses IPv6 to discover the IPv6 link local addresses" 
+	echo ""
+	echo "$0 <interface> <-c|-cb|-f> [parameters]"
+	echo "  -c  -> execute command"
+	echo "  -cb -> execute command in background"
+    echo "  -f  -> copy file"
+    exit 0
+} 
+
+I="$1"
+shift
+T="$1"
+shift
+
+TMP="/tmp/wibed"
+
+echo "Discovering nodes..."
+ping6 ff02::2%$I -c 5 -i 1 -s 16 | grep "^24" > $TMP.nodes.tmp
+cat $TMP.nodes.tmp  | awk '{print $4}' | sed s/":$"//g | sort -u > $TMP.nodes
+echo "-------------------------"
+cat $TMP.nodes
+echo "-------------------------"
+
+echo
+
+[ "$T" == "-c" ] && {
+C="$@"
+echo "Executing command $C"
+for IP in $(cat $TMP.nodes)
+	do
+	echo "-------------------------"
+	echo "  $IP"
+	echo "-------------------------"
+	ssh -t $IP%$I $@
+	done
+}
+
+[ "$T" == "-cb" ] && {
+C="$@"
+echo "Executing background command $C"
+for IP in $(cat $TMP.nodes)
+	do
+	echo "-------------------------"
+	echo "  $IP"
+	echo "-------------------------"
+	ssh -ft $IP%$I $@
+	done
+}
+[ "$T" == "-f" ] && {
+O="$1"
+D="$2"
+echo "Copying file $O into $D"
+for IP in $(cat $TMP.nodes)
+	do
+	scp -r $O [$IP%$I]:$D
+	done
+}
+
