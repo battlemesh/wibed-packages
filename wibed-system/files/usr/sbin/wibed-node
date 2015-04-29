@@ -8,6 +8,11 @@ json = require ("dkjson")
 libuci = require ("uci")
 cURL = require("cURL")
 
+-- Controls the timeout for http.request to the server
+--
+socket.http.TIMEOUT = 10
+
+
 RESULTS_DIR = "/root/results"
 COMMANDS_PIPE = "/var/run/command-executer.sock"
 OVERLAY_DIR = "/overlay"
