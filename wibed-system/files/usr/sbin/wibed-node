@@ -8,6 +8,11 @@ json = require ("dkjson")
 libuci = require ("uci")
 cURL = require("cURL")
 
+-- Controls the timeout for http.request to the server
+--
+socket.http.TIMEOUT = 10
+
+
 RESULTS_DIR = "/root/results"
 COMMANDS_PIPE = "/var/run/command-executer.sock"
 OVERLAY_DIR = "/overlay"
@@ -612,13 +617,41 @@ end
 
 -- Function: getMgmtAddress()
 --
--- return's node's MAC address for mgmg0 interface
+-- returns node's MAC address for mgmt0 interface
 --
 
 function getMgmtAddress()
 	local _, mymac = executeCommand(string.format("cat /sys/class/net/mgmt0/address"))
 	return mymac
 end
+
+-- Function: sendRestore
+-- 
+-- Sends restore command to the specified nodeid through alfred
+-- may be a simple reboot or reset with commands preexecution (if in experiment)
+-- Parameters: nodeid (id of the node to restore); reset (signal to reexecute previous commands)
+
+function sendRestore(nodeid, reset)
+        if nodeid ~=nil then
+                executeCommand(string.format("uci set wibed.temp=wibed; uci set wibed.temp.gwack='1'; uci commit"))
+                if reset == true then
+                        executeCommand(string.format("/usr/sbin/wibed-restore gw %s full", nodeid))
+                elseif reset == false then
+                        executeCommand(string.format("/usr/sbin/wibed-restore gw %s", nodeid))
+                else
+                        print(string.format("Invalid reset argument. Expecting True or False. Got something diferent"))
+                end
+        end
+end
+
+-- Acquire the lock before proceeding any further
+-- Guarantees only one script execution at a time
+os.execute(string.format("lock -w /tmp/wibed-node-lock; lock /tmp/wibed-node-lock"))
+
+print("---------------------------------------")
+_, date = executeCommand(string.format("date"))
+print(date)
+print("---------------------------------------")
 
 apiUrl = assert(readVariable("general.api_url"), "API URL not defined")
 print(string.format("API URL: %s", apiUrl))
@@ -676,6 +709,20 @@ elseif status == IDLE or status == RUNNING or status == ERROR then
         request["results"] = buildResults()
         request["commandAck"] = commandAck
     end
+    
+    -- Sending gateway & node ACK to the server (for sendRestore process)
+    --
+    local _, gwack = executeCommand(string.format("uci get wibed.temp.gwack -q"))
+    local _, nodeack = executeCommand(string.format("uci get wibed.temp.nodeack -q"))
+    if gwack == "1" then
+       request["sendRestore"] = "GWACK"
+       executeCommand(string.format("uci set wibed.temp.gwack='0'; uci commit"))
+    end
+    if nodeack == "1" then
+       request["sendRestore"] = "NODEACK"
+       executeCommand(string.format("uci set wibed.temp.nodeack='0'; uci commit"))
+    end
+
 end
 
 jsonEncodedRequest = json.encode(request, {indent = true})
@@ -751,6 +798,14 @@ if responseBody and statusCode == 200 then
                                 experiment["overlay"],
                                 experiment["hash"])
         end
+
+        -- Processing request to restore the specified node
+        --
+        local sendrestore = response["sendRestore"]
+        if sendrestore then
+            sendRestore(sendrestore["dest"],sendrestore["reset"])
+        end
+
     elseif response["experiment"] and status >= PREPARING 
                                   and status <= RUNNING then
         if response["experiment"]["action"] == "FINISH" then
@@ -784,3 +839,8 @@ if responseBody and statusCode == 200 then
 else
     print(string.format("Communication with server unsuccessful: %s", statusCode))
 end
+
+-- Release the lock
+--
+os.execute(string.format("lock -u /tmp/wibed-node-lock"))
+

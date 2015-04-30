@@ -1,0 +1,25 @@
+#!/bin/sh
+
+
+file1=/tmp/wibed-node.log
+file2=/root/wibed-restore.log
+
+maxsize1=1024	# 1024 kilobytes
+maxsize2=50	# 50 kilobytes
+
+actualsize1=$(du -k "$file1" | cut -f1)
+actualsize2=$(du -k "$file2" | cut -f1)
+
+if [ $actualsize1 -ge $maxsize1 ]; then
+        lock -w /tmp/wibed-node-lock; lock /tmp/wibed-node-lock
+        mv $file1 $file1.old
+        lock -u /tmp/wibed-node-lock
+fi
+
+
+if [ $actualsize2 -ge $maxsize2 ]; then
+        lock -w /tmp/wibed-restore-lock; lock /tmp/wibed-restore-lock
+        mv $file2 $file2.old
+        lock -u /tmp/wibed-restore-lock
+fi
+

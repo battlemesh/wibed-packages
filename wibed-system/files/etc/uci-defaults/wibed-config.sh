@@ -12,6 +12,12 @@ done
 
 [ ! -f /etc/config/wibed ] && cp -f /etc/wibed.default-config /etc/config/wibed
 
+# Configure ALFRED properly
+uci set 'alfred'.alfred.interface='mgmt0'
+uci set 'alfred'.alfred.disabled='0'
+uci commit
+/etc/init.d/alfred start
+
 #Fix wibed version in UCI configuration
 TEST=`tail -1 /etc/wibed.version` && uci set wibed.upgrade.version=`echo ${TEST:0:8}`
 

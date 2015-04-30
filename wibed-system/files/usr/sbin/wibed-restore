@@ -1,0 +1,158 @@
+#!/usr/bin/lua
+
+-- Script allows to reboot any other node remotely from the nearest GW node,
+-- using ALFRED message exchange.
+-- It may be a simple reboot or reset with commands reexecution (if in experiment)
+--
+
+-- Lua doesn't have sleep function. SRSLY?
+function sleep(n)
+        os.execute("sleep " .. tonumber(n))
+end
+
+-- Get our nodeid
+function myNodeId()
+	local idhandle = io.popen("uci get wibed.general.node_id")
+	local nodeid  = idhandle:read("*a")
+	idhandle:close()
+	nodeid = string.gsub(nodeid, "%s+$", "" )
+	return nodeid
+end
+
+--Checks the given message for a line with nodeid and if found returns the values of this line
+--
+function alfMsgFind(msg, nodeid)
+        if msg~=nil then -- ignore empty messages
+                for line in msg:gmatch("[^\r\n]+") do -- split msg into lines
+                        line = string.gsub(line, ':', "") -- remove : from sender's MAC
+                        local twords = {}
+                        for word in string.gmatch(line, "%w+") do -- find all words
+                                table.insert (twords, word)
+                        end
+			if twords[2]=="RESTORE" then
+                        	if twords[3]..'-'..twords[4]==nodeid then -- tweak for wibed-xxxx nodeid format
+        	                        return twords[2], twords[3]..'-'..twords[4], twords[5], twords[6]
+                        	end
+			end
+                end
+        end
+end
+
+function sendRestore(nodeid, full) -- Sends restore command to specified node
+        if nodeid == nil then
+                print(string.format("No nodeid specified"))
+        else
+                if full == nil then
+			print("Sending RESTORE command to node: "..nodeid)
+        	        os.execute(string.format("echo 'RESTORE %s NONE NONE' | alfred -s 92", nodeid))
+		else
+			print ("Sending RESTORE with RESET command to node: "..nodeid)
+	                os.execute(string.format("echo 'RESTORE %s RESET NONE' | alfred -s 92", nodeid))
+		end
+
+                -- Check for ACK from the node
+                local n=0
+                while n~=1 do
+                        local msg = alfMsgCheck(93)
+                        if msg~=nil then
+                                _, _, _, ack = alfMsgFind(msg, nodeid)
+                                if ack=="ACK" then
+                                        print ("ACK recieved. Erasing the restore Alfred message")
+                                        os.execute(string.format("echo 'NONE NONE NONE NONE' | alfred -s 92"))
+					os.execute(string.format("uci set wibed.temp.nodeack='1'; uci commit"))
+					n=n+1
+                                else
+                                        print ("No ACK yet")
+                                        sleep(10)
+                                end
+                        end
+                end
+
+
+        end
+end
+
+-- Retrieves alfred messages of the specified ID
+--
+function alfMsgCheck(id)
+        if id==92 or 93 then
+                local msghandle = io.popen("alfred -r "..id)
+                local msg = msghandle:read("*a")
+                msghandle:close()
+		if msg then
+			msg = string.gsub( msg, "%s+$", "" ) -- remove any white space at the end
+		end
+                return msg
+        else
+                print ("ID is not known. 92 for RESTORE. 93 for ACK")
+        end
+end
+
+-- Checks if there are commands for a node to be restored
+function restoreCheck()
+        local msg = alfMsgCheck(92)
+	local nodeid = myNodeId()
+
+        if msg~=nil then
+                restore, _, reset, _ = alfMsgFind(msg, nodeid)
+                        if restore == "RESTORE" then
+				os.execute(string.format("echo '---------------------------------------'"))
+				os.execute(string.format("echo $(date)"))
+				os.execute(string.format("echo '---------------------------------------'"))
+                                if reset == "RESET" then
+					os.execute(string.format("echo 'Recieved RESTORE command'"))
+                                        -- Send ACK to the GW
+					os.execute(string.format("echo 'Sending ACK to the GW'"))
+                                        os.execute(string.format("echo 'RESTORE %s RESET ACK' | alfred -s 93", nodeid))
+					sleep(10)
+					-- Erase the ACK
+					os.execute(string.format("echo 'Erasing ACK'"))
+					os.execute(string.format("echo 'NONE NONE NONE NONE' | alfred -s 93"))
+					sleep(10)
+					-- Reboot the node with reset
+					os.execute(string.format("echo 'Resetting the node with commands reexecution ...'"))
+					sleep(2)
+					os.execute(string.format("/sbin/jffs2reset -y; reboot -f"))
+                                else
+					os.execute(string.format("echo 'Recieved RESET command'"))
+                                        -- Send ACK for reset
+					os.execute(string.format("echo 'Sending ACK to the GW'"))
+                                        os.execute(string.format("echo 'RESTORE %s NONE ACK' | alfred -s 93", nodeid))
+					sleep(10)
+					-- Erase the ACK
+					os.execute(string.format("echo 'Erasing ACK'"))
+					os.execute(string.format("echo 'NONE NONE NONE NONE' | alfred -s 93"))
+					sleep(10)
+                                        -- reboot the node
+					os.execute(string.format("echo 'Rebooting the node and continue with the last command ...'"))
+					sleep(2)
+                                        os.execute(string.format("reboot -f"))
+                                end
+                        end
+
+        end
+end
+
+-- call it with the following arguments
+-- lua wibed-restore gw nodeid full/nill  -- for gateway to send restore command to specific node
+-- OR
+-- lua wibed-restore node 	-- for a node to start checking for restore messages
+
+function main()
+	if arg[1]=="gw" then
+		if arg[2] ~=nil then
+			sendRestore(arg[2], arg[3])
+		else
+			print ("Wrong arguments. Should be gw nodeid full/nill")
+		end
+	elseif arg[1]=="node" then
+		restoreCheck()
+	else
+		print ("Wrong arguments. Should be gw/node nodeid/nill full/nill")
+	end
+end
+
+os.execute(string.format("lock -w /tmp/wibed-restore-lock; lock /tmp/wibed-restore-lock"))
+main()
+os.execute(string.format("lock -u /tmp/wibed-restore-lock"))
+

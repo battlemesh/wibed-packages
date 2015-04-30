@@ -2,6 +2,6 @@
 if [ "$BUTTON" = wps ] && [ "$ACTION" = released ]
 	then 
 	echo "Restoring defaults..." 
-	/sbin/firstboot -y 
+	/sbin/jffs2reset -y 
 	/sbin/reboot -f
 fi
