@@ -712,8 +712,8 @@ elseif status == IDLE or status == RUNNING or status == ERROR then
     
     -- Sending gateway & node ACK to the server (for sendRestore process)
     --
-    local _, gwack = executeCommand(string.format("uci get wibed.temp.gwack -q"))
-    local _, nodeack = executeCommand(string.format("uci get wibed.temp.nodeack -q"))
+    local _, gwack = executeCommand(string.format("uci -q get wibed.temp.gwack"))
+    local _, nodeack = executeCommand(string.format("uci -q get wibed.temp.nodeack"))
     if gwack == "1" then
        request["sendRestore"] = "GWACK"
        executeCommand(string.format("uci set wibed.temp.gwack='0'; uci commit"))
