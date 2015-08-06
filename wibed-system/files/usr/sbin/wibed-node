@@ -15,9 +15,12 @@ socket.http.TIMEOUT = 10
 
 RESULTS_DIR = "/root/results"
 COMMANDS_PIPE = "/var/run/command-executer.sock"
-OVERLAY_DIR = "/overlay"
-MNT_USB_OVERLAY = "/tmp/usb-overlay"
-MNT_FLASH_OVERLAY = "/tmp/flash-overlay"
+OVERLAY_DIR_NAME = "/overlay"
+OVERLAY_DIR = "/overlay/upper"
+MNT_USB_OVERLAY_NAME = "/tmp/usb-overlay"
+MNT_USB_OVERLAY = "/tmp/usb-overlay/upper"
+MNT_FLASH_OVERLAY_NAME = "/tmp/flash-overlay"
+MNT_FLASH_OVERLAY = "/tmp/flash-overlay/upper"
 REBOOT_DELAY = 60
 SAVE_DIR = "/save"
 
@@ -504,7 +507,7 @@ end
 -- Starts the experiment.
 function doStartExperiment()
     status = DEPLOYING
-    uciSetInOverlays("fstab", "usb_overlay", "target", OVERLAY_DIR, "both")
+    uciSetInOverlays("fstab", "usb_overlay", "target", OVERLAY_DIR_NAME, "both")
     -- Change status to flash overlay as DEPLOYING
     uciSetInOverlays("wibed", "general", "status", status, "FLASH")
     -- Change future status to usb overlay as RUNNING
@@ -541,7 +544,7 @@ end
 function doFinishExperiment()
 
     if mountedOverlay == USB then
-        uciSetInOverlays("fstab", "usb_overlay", "target", MNT_USB_OVERLAY, "both")
+        uciSetInOverlays("fstab", "usb_overlay", "target", MNT_USB_OVERLAY_NAME, "both")
         executeCommand(string.format("echo \"-1 exit\" > \"%s\"",COMMANDS_PIPE), false)
 
         status = RESETTING
@@ -646,7 +649,7 @@ end
 
 -- Acquire the lock before proceeding any further
 -- Guarantees only one script execution at a time
-os.execute(string.format("lock -w /tmp/wibed-node-lock; lock /tmp/wibed-node-lock"))
+--os.execute(string.format("lock -w /tmp/wibed-node-lock; lock /tmp/wibed-node-lock"))
 
 print("---------------------------------------")
 _, date = executeCommand(string.format("date"))
@@ -842,5 +845,5 @@ end
 
 -- Release the lock
 --
-os.execute(string.format("lock -u /tmp/wibed-node-lock"))
+--os.execute(string.format("lock -u /tmp/wibed-node-lock"))
 

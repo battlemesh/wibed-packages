@@ -190,9 +190,10 @@ local function set_batadv(dev)
 --	x:set("network",ifn,"ifname",dev)
 	x:set("network",ifn,"proto","batadv")
 	x:set("network",ifn,"mesh","bat0")
-	if is_wifi(dev) then
-		x:set("network",ifn,"mtu","1532")
-	end
+	-- Commented to be applied always	
+	-- if is_wifi(dev) then
+	x:set("network",ifn,"mtu","1532")
+	-- end
 end
 
 local function set_mgmt_net()
