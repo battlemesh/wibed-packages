@@ -1,6 +1,7 @@
 #!/bin/sh
 
-[ -f /usr/bin/apply_reghack ] && /usr/bin/apply_reghack
+# Reghack not needed anymore
+#[ -f /usr/bin/apply_reghack ] && /usr/bin/apply_reghack
 
 for device in /dev/sd*; do
     if [ -b $device ]; then
@@ -23,5 +24,9 @@ TEST=`tail -1 /etc/wibed.version` && uci set wibed.upgrade.version=`echo ${TEST:
 
 wibed-config 2>&1 > /root/wibed-config.log
 wibed-location -d >/dev/null
+
+# Conform to new OVERLAYFS directories
+mkdir -p /tmp/usb-overlay/upper
+mkdir -p /tmp/usb-overlay/work
 
 (sleep 10 && reboot) &
