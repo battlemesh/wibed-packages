@@ -25,4 +25,8 @@ TEST=`tail -1 /etc/wibed.version` && uci set wibed.upgrade.version=`echo ${TEST:
 wibed-config 2>&1 > /root/wibed-config.log
 wibed-location -d >/dev/null
 
+# Conform to new OVERLAYFS directories
+mkdir -p /tmp/usb-overlay/upper
+mkdir -p /tmp/usb-overlay/work
+
 (sleep 10 && reboot) &
