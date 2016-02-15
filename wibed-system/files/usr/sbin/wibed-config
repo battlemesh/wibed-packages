@@ -101,6 +101,9 @@ local function get_bssid()
 	return x:get(ucic, "management","bssid") or "02:CA:FF:EE:BA:BE"
 end
 
+local function get_ssid()
+	return x:get(ucic, "management", "ssid") or "wibed"
+end
 
 local function printf(fmt, ...)
 	print(string.format(fmt, ...))
@@ -397,17 +400,17 @@ local function set_mgmt_wifi()
 			    x:set("wireless", id, "ssid", generate_ssid())
 			    x:set("wireless", id, "network", net)
 			    x:set("wireless", id, "mode", "mesh")
-			    x:set("wireless", id, "mesh_id", "wibed")
+			    x:set("wireless", id, "mesh_id", get_ssid())
 			    x:set("wireless", id, "mesh_fwding", 0)
 			    x:set("wireless", id, "ifname", id)
             end
 
 			set_batadv(id)
-	
+
 			wifi_num = wifi_num + 1
-		else 
+		else
 			printf("-> Error, device %s not found as WiFi interface", i)
-		end	
+		end
 	end
 end
 
