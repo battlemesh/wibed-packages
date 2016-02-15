@@ -101,6 +101,9 @@ local function get_bssid()
 	return x:get(ucic, "management","bssid") or "02:CA:FF:EE:BA:BE"
 end
 
+local function get_ssid()
+	return x:get(ucic, "management", "ssid") or "wibed"
+end
 
 local function printf(fmt, ...)
 	print(string.format(fmt, ...))
