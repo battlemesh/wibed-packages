@@ -1,51 +1,62 @@
 # Wibed-packages Configuration
-menu "Configuration"
+menu "Wibed node configuration"
 
     config WIBED_SYSTEM_SERVER
         string
-        prompt "Server"
+        prompt "Controller URL"
         default "http://wibed.confine-project.eu/"
 	select KMOD_BATMAN_ADV_BATMAN_V
         help
-            Choose the server
+            Specify the URL of the WiBed Controller Server where the nodes will connect.
+            The default URL is the CONFINE WiBed Controller.
 
     config WIBED_SYSTEM_TESTBED
         string
-        prompt "Testbed Name"
+        prompt "Testbed name"
         default "wibed"
         help
-            Provide testbed name
+            Specify the testbed name. This is used to identify a group of routers in a
+            specific location (e.g. WiBed-LabDeployment-1).
     
     menu "Management Network Configuration"
     
         config WIBED_SYSTEM_GW
-            bool "Is Gateway"
+            bool "Gateway node"
             default n
             help
-                Is the node going to be a gateway...
+                Choose whether the node will be a gateway node. Gateway nodes are connected
+                to an Internet up-link and share the connection among the rest of nodes over
+                the mesh management network. Gateway nodes shouldn't be used for experiments.
         
         config WIBED_SYSTEM_MGMT_SSID
             string
-            prompt "Mgmt Network SSID"
+            prompt "802.11s management network SSID"
             default "wibed"
             help
-                Provide mgmt network SSID
+                Specify the SSID of the 802.11s mesh management network. All nodes in the
+                same testbed must have the same 802.11s mesh SSID to be able to create the
+                management network.
 
         config WIBED_SYSTEM_MGMT_BSSID
             string
-            prompt "Mgmt Network BSSID"
+            prompt "Ad-Hoc management network BSSID"
             default "02:C0:FF:EE:C0:DE"
             help
-                Provide mgmt network BSSID, in case that batAdv all devices with same
-                BSSID will belong to the same mgmt network
+                Specify the BSSID of the Ad-Hoc management mesh network. All nodes in the
+                same testbed must have the same Ad-Hoc BSSID to be able to create the
+                management network.
     
         choice
-            prompt "Mmgt network iface priority"
+            prompt "Management network interfaces order"
             default WIBED_SYSTEM_MGMT_1
             help
-                The first interface wil be the mgmt iface if it is functional
-                Orelse the second one. For TL-WDR4300 radio0 is on 5GHz and 
-                radio1 is on 2.4GHz
+                The first radio interface interface specified here (e.g. radio0) will be
+                used for the management mesh network, while the second one will be used for
+                experimentation.
+		TP-Link TL-WDR4300 devices have the following layout:
+                 radio0/radio1 => 2.4 GHz/5 GHz
+		TP-Link TL-WDR4900 devices have the following layout:
+                 radio1/radio0 => 2.4 GHz/5 GHz
 
         config WIBED_SYSTEM_MGMT_5
             bool "radio0/radio1"
