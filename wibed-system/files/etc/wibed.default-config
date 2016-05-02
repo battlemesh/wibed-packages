@@ -9,6 +9,8 @@ config wibed general
     option coordy '2.11306'						# <float> Latitude coordinates of the node
     option coordz '2'							# <int> Elevation of the node (Floor number)
     option api_url 'http://wibed.confine-project.eu/' # <URL> HTTP URL for the controller API
+    option commandAck '0'          # <int> store the current execution command ACK
+    option resultAck '0'           # <int> store the current result command ACK
 
 config wibed 'location'
     option testbed 'wibed'						# <string> Testbed description. This information will sort the nodes in the server. Use an comprehensive name.
