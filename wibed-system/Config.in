@@ -5,6 +5,7 @@ menu "Configuration"
         string
         prompt "Server"
         default "http://wibed.confine-project.eu/"
+	select KMOD_BATMAN_ADV_BATMAN_V
         help
             Choose the server
 
