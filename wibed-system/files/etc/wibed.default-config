@@ -11,6 +11,7 @@ config wibed general
     option api_url 'http://wibed.confine-project.eu/' # <URL> HTTP URL for the controller API
     option commandAck '0'          # <int> store the current execution command ACK
     option resultAck '0'           # <int> store the current result command ACK
+    option root_password ''                           # <string> Default root password (no password)
 
 config wibed 'location'
     option testbed 'wibed'						# <string> Testbed description. This information will sort the nodes in the server. Use an comprehensive name.
