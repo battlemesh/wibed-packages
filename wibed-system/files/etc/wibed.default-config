@@ -9,8 +9,6 @@ config wibed general
     option coordy '-8.595267534255981'                # <float> Latitude coordinates of the node
     option coordz '0'                                 # <int> Elevation of the node (Floor number)
     option api_url 'http://wibed.confine-project.eu/' # <URL> HTTP URL for the controller API
-    option commandAck '0'          # <int> store the current execution command ACK
-    option resultAck '0'           # <int> store the current result command ACK
     option root_password ''                           # <string> Default root password (no password)
 
 config wibed 'location'
