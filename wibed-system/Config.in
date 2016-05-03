@@ -17,6 +17,14 @@ menu "Wibed node configuration"
         help
             Specify the testbed name. This is used to identify a group of routers in a
             specific location (e.g. WiBed-LabDeployment-1).
+
+    config WIBED_SYSTEM_ROOT_PASSWORD
+        string
+        prompt "Node root password"
+        default "wibed"
+        help
+            Specify the root password for the node. Setting a password will, during
+            the first boot, disable telnet and enable SSH login.
     
     menu "Management Network Configuration"
     

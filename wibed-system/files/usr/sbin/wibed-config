@@ -424,6 +424,15 @@ function set_location()
 	x:set(ucil, "location", "elev", coordz)
 end
 
+function set_root_password()
+        print("Setting root password...")
+        root_password=x:get(ucic,"general","root_password")
+        if root_password == nil then
+                os.execute("passwd -d root")
+        else
+                os.execute(string.format("( echo %s; sleep 2; echo %s) | passwd > /dev/null 2>&1", root_password, root_password))
+        end
+end
 
 function main()
 	reset_wifi()
@@ -448,6 +457,8 @@ function main()
 	x:commit(ucic)
 	x:commit(ucil)
 	x:commit("system")
+
+	set_root_password()
 end
 
 main()

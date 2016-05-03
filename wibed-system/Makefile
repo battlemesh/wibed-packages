@@ -84,6 +84,10 @@ WIBED_SYSTEM_MGMT_BSSID:=$(if $(CONFIG_WIBED_SYSTEM_MGMT_BSSID),\
 	$(CONFIG_WIBED_SYSTEM_MGMT_BSSID),\
 	$(strip "02:C0:FF:EE:C0:DE"))
 
+WIBED_SYSTEM_ROOT_PASSWORD:=$(if $(CONFIG_WIBED_SYSTEM_ROOT_PASSWORD),\
+	$(CONFIG_WIBED_SYSTEM_ROOT_PASSWORD),\
+	$(strip ""))
+
 ifdef CONFIG_WIBED_SYSTEM_MGMT_5
 	WIBED_SYSTEM_MGMT:="radio0/radio1"
 endif
@@ -117,6 +121,8 @@ define Package/wibed-system/install
 	$(SED) "s~.*list ifaces.*radio.*~\t list ifaces \'$(WIBED_SYSTEM_MGMT)\'~g"\
 		"$(1)/etc/wibed.default-config"
 	$(SED) "s~.*option is_gw.*~\t option is_gw \'$(WIBED_SYSTEM_GW)\'~g"\
+		"$(1)/etc/wibed.default-config"
+	$(SED) "s~.*option root_password.*~\t option root_password \'$(strip $(WIBED_SYSTEM_ROOT_PASSWORD))\'~g"\
 		"$(1)/etc/wibed.default-config"
 	$(INSTALL_DIR) $(1)/save
 	echo "$(TIMESTAMP)" > $(1)/etc/wibed.version
