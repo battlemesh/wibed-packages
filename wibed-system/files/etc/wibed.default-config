@@ -40,7 +40,7 @@ config wibed management
     option l2proto 'mesh'                       # <string> 'adhoc' uses batadv while "mesh' uses 802.11s
     option bssid '02:C0:FF:EE:C0:DE'			# <hex string> MAC address (which?)
     option ssid 'wibed'							# <string> ssid for the management network
-    option ipv4_net '10.99.R1.R2' 				# IPv4 used for the management network (R1 and R2 are last 16 bits from MAC)
+    option ipv4_net '172.20.R1.R2' 				# IPv4 used for the management network (R1 and R2 are last 16 bits from MAC)
     option ipv6_net 'fdba:99:R1R2::1/64'		# IPv6 used for the management network
     option ipv4_lan_net '192.168.R2.1'			# Lan network if it is gateway
     option txpower2 '22'						# Transmit power for the wifi devices
