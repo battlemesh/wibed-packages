@@ -18,7 +18,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=wibed-system
-PKG_RELEASE:=4
+PKG_RELEASE:=5
 PKG_BUILD_DIR := $(BUILD_DIR)/$(PKG_NAME)
 
 TIMESTAMP := $(shell date -u +%Y%m%d-%H%M)
@@ -88,14 +88,6 @@ WIBED_SYSTEM_ROOT_PASSWORD:=$(if $(CONFIG_WIBED_SYSTEM_ROOT_PASSWORD),\
 	$(CONFIG_WIBED_SYSTEM_ROOT_PASSWORD),\
 	$(strip ""))
 
-ifdef CONFIG_WIBED_SYSTEM_MGMT_5
-	WIBED_SYSTEM_MGMT:="radio0/radio1"
-endif
-
-ifdef CONFIG_WIBED_SYSTEM_MGMT_24
-	WIBED_SYSTEM_MGMT:="radio1/radio0"
-endif
-
 ifdef CONFIG_WIBED_SYSTEM_GW
 	WIBED_SYSTEM_GW:="1"
 else
@@ -117,8 +109,6 @@ define Package/wibed-system/install
 	$(SED) "s~.*option ssid.*~\t option ssid \'$(strip $(WIBED_SYSTEM_MGMT_SSID))\'~g"\
 		"$(1)/etc/wibed.default-config"
 	$(SED) "s~.*option bssid.*~\t option bssid \'$(strip $(WIBED_SYSTEM_MGMT_BSSID))\'~g"\
-		"$(1)/etc/wibed.default-config"
-	$(SED) "s~.*list ifaces.*radio.*~\t list ifaces \'$(WIBED_SYSTEM_MGMT)\'~g"\
 		"$(1)/etc/wibed.default-config"
 	$(SED) "s~.*option is_gw.*~\t option is_gw \'$(WIBED_SYSTEM_GW)\'~g"\
 		"$(1)/etc/wibed.default-config"

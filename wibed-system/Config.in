@@ -54,26 +54,6 @@ menu "Wibed node configuration"
                 same testbed must have the same Ad-Hoc BSSID to be able to create the
                 management network.
     
-        choice
-            prompt "Management network interfaces order"
-            default WIBED_SYSTEM_MGMT_1
-            help
-                The first radio interface interface specified here (e.g. radio0) will be
-                used for the management mesh network, while the second one will be used for
-                experimentation.
-		TP-Link TL-WDR4300 devices have the following layout:
-                 radio0/radio1 => 2.4 GHz/5 GHz
-		TP-Link TL-WDR4900 devices have the following layout:
-                 radio1/radio0 => 2.4 GHz/5 GHz
-
-        config WIBED_SYSTEM_MGMT_5
-            bool "radio0/radio1"
-
-        config WIBED_SYSTEM_MGMT_24
-            bool "radio1/radio0"
-
-        endchoice
-
     endmenu
 
 endmenu
