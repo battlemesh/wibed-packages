@@ -37,7 +37,7 @@ config wibed management
     list ifaces 'radio1'					#   dev2/dev1 means use dev2 if exist else dev1
     option channel5 '40+'					# <int> Wireless channel (in the 5GHz band)
     option channel2 '6'							# <int> Wireless channel (in the 2.4GHz band)
-    option l2proto 'mesh'                       # <string> 'adhoc' uses batadv while "mesh' uses 802.11s
+    option l2proto 'adhoc'                       # <string> 'adhoc' uses batadv while "mesh' uses 802.11s
     option bssid '02:C0:FF:EE:C0:DE'			# <hex string> MAC address (which?)
     option ssid 'wibed'							# <string> ssid for the management network
     option ipv4_net '172.20.R1.R2' 				# IPv4 used for the management network (R1 and R2 are last 16 bits from MAC)
