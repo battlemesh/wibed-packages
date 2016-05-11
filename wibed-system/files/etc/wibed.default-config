@@ -33,8 +33,9 @@ config wibed upgrade
 
 config wibed management
     list ifaces 'eth0.1'						# List of interfaces used for management network
-    list ifaces 'radio0/radio1'					#   dev2/dev1 means use dev2 if exist else dev1
-    option channel5 '36'						# <int> Wireless channel (in the 5GHz band)
+    list ifaces 'radio0'					#   dev2/dev1 means use dev2 if exist else dev1
+    list ifaces 'radio1'					#   dev2/dev1 means use dev2 if exist else dev1
+    option channel5 '40+'					# <int> Wireless channel (in the 5GHz band)
     option channel2 '6'							# <int> Wireless channel (in the 2.4GHz band)
     option l2proto 'mesh'                       # <string> 'adhoc' uses batadv while "mesh' uses 802.11s
     option bssid '02:C0:FF:EE:C0:DE'			# <hex string> MAC address (which?)
