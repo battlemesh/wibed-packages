@@ -35,8 +35,8 @@ config wibed management
     list ifaces 'eth0.1'						# List of interfaces used for management network
     list ifaces 'radio0'					#   dev2/dev1 means use dev2 if exist else dev1
     list ifaces 'radio1'					#   dev2/dev1 means use dev2 if exist else dev1
-    option channel5 '40+'					# <int> Wireless channel (in the 5GHz band)
-    option channel2 '6'							# <int> Wireless channel (in the 2.4GHz band)
+    option channel5 '40+'					# <list int> Wireless channels (in the 5GHz band). Assigned in order while configuring interfaces
+    option channel2 '6'							# <list int> Wireless channels (in the 2.4GHz band) Assigned in order while configuring interfaces
     option l2proto 'adhoc'                       # <string> 'adhoc' uses batadv while "mesh' uses 802.11s
     option bssid '02:C0:FF:EE:C0:DE'			# <hex string> MAC address (which?)
     option ssid 'wibed'							# <string> ssid for the management network
@@ -47,4 +47,3 @@ config wibed management
     option txpower5 '18'
     option mrate '6000'							# Multicast Rate for the management wifi network
     option is_gw '0'							# Set to 1 if the node is acting as gateway
-

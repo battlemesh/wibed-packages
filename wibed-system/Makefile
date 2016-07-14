@@ -84,6 +84,17 @@ WIBED_SYSTEM_MGMT_BSSID:=$(if $(CONFIG_WIBED_SYSTEM_MGMT_BSSID),\
 	$(CONFIG_WIBED_SYSTEM_MGMT_BSSID),\
 	$(strip "02:C0:FF:EE:C0:DE"))
 
+WIBED_SYSTEM_MGMT_CHANNEL5:=$(if $(CONFIG_WIBED_SYSTEM_MGMT_CHANNEL5),\
+	$(CONFIG_WIBED_SYSTEM_MGMT_CHANNEL5),\
+	$(strip "40+"))
+
+WIBED_SYSTEM_MGMT_CHANNEL2:=$(if $(CONFIG_WIBED_SYSTEM_MGMT_CHANNEL2),\
+	$(CONFIG_WIBED_SYSTEM_MGMT_CHANNEL2),\
+	$(strip "6"))
+
+WIBED_SYSTEM_MGMT_CHANNEL2:=$(subst $\",,$(WIBED_SYSTEM_MGMT_CHANNEL2))
+WIBED_SYSTEM_MGMT_CHANNEL5:=$(subst $\",,$(WIBED_SYSTEM_MGMT_CHANNEL5))
+
 WIBED_SYSTEM_ROOT_PASSWORD:=$(if $(CONFIG_WIBED_SYSTEM_ROOT_PASSWORD),\
 	$(CONFIG_WIBED_SYSTEM_ROOT_PASSWORD),\
 	$(strip ""))
@@ -98,6 +109,10 @@ endif
 #		"$(1)/etc/wibed.default-config")
 
 define Package/wibed-system/install
+	echo $(strip $(WIBED_SYSTEM_MGMT_CHANNEL5))
+	echo $(strip $(WIBED_SYSTEM_MGMT_CHANNEL2))
+	echo $(WIBED_SYSTEM_MGMT_CHANNEL5)
+	echo $(WIBED_SYSTEM_MGMT_CHANNEL2)
 	$(CP) ./files/* $(1)/
 	$(if $(CONFIG_WIBED_SYSTEM_SERVER),\
 		$(SED) "s~.*option api_url.*~\t option api_url \'$(strip $(WIBED_SYSTEM_SERVER))\'~g"\
@@ -109,6 +124,10 @@ define Package/wibed-system/install
 	$(SED) "s~.*option ssid.*~\t option ssid \'$(strip $(WIBED_SYSTEM_MGMT_SSID))\'~g"\
 		"$(1)/etc/wibed.default-config"
 	$(SED) "s~.*option bssid.*~\t option bssid \'$(strip $(WIBED_SYSTEM_MGMT_BSSID))\'~g"\
+		"$(1)/etc/wibed.default-config"
+	$(SED) "s~.*option channel5.*~\t option channel5 \'$(strip $(WIBED_SYSTEM_MGMT_CHANNEL5))\'~g"\
+		"$(1)/etc/wibed.default-config"
+	$(SED) "s~.*option channel2.*~\t option channel2 \'$(strip $(WIBED_SYSTEM_MGMT_CHANNEL2))\'~g"\
 		"$(1)/etc/wibed.default-config"
 	$(SED) "s~.*option is_gw.*~\t option is_gw \'$(WIBED_SYSTEM_GW)\'~g"\
 		"$(1)/etc/wibed.default-config"
