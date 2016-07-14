@@ -3,11 +3,15 @@
 # Reghack not needed anymore
 #[ -f /usr/bin/apply_reghack ] && /usr/bin/apply_reghack
 
-for device in /dev/sd*; do
+for device in /dev/sd?; do
     if [ -b $device ]; then
+      dev=${device#"/dev/"}
+      if ! grep ATA /sys/block/$dev/device/vendor && grep 1 /sys/block/$dev/removable;then
         #blkid -t LABEL=wibed-overlay ${device}1 >/dev/null && continue
+        echo "Running wibed-prepare-usb $device"
         wibed-prepare-usb $device >/root/wibed-prepare-usb.log
         break
+      fi
     fi
 done
 
@@ -21,6 +25,9 @@ uci commit
 
 #Fix wibed version in UCI configuration
 TEST=`tail -1 /etc/wibed.version` && uci set wibed.upgrade.version=`echo ${TEST:0:8}`
+
+# Wait for network.wireless to appear in ubus
+ubus -t 60 wait_for network.wireless
 
 wibed-config 2>&1 > /root/wibed-config.log
 wibed-location -d >/dev/null

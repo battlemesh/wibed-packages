@@ -1,0 +1,25 @@
+#!/bin/sh /etc/rc.common
+
+
+START=99
+
+Wibed_log_file="/root/wibed-config.log"
+
+start() {
+
+	if [ ! -e "$Wibed_log_file" ]; then
+		initialize
+	fi
+}
+
+stop() {
+	sleep 1
+}
+
+restart() {
+	start
+}
+
+initialize() {
+	wibed-init-config 2>&1 > /root/wibed-init-config.log
+}
