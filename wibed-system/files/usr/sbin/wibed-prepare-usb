@@ -4,6 +4,11 @@ DEVICE=${1:-"/dev/sda"}
 
 [ -b $DEVICE ] || { echo "$DEVICE could not be found. Aborting."; exit 1; }
 
+set_fstab_device() {
+	uci set fstab.usb_overlay.device="${DEVICE}1"
+	uci commit fstab
+}
+
 set_uuid() {
 	uuid=$(blkid ${DEVICE}1 | tr ' ' \\n | grep ^UUID | cut -d\" -f2)
 
@@ -19,7 +24,7 @@ set_enabled() {
 	uci commit fstab
 }
 
-grep ^$DEVICE /proc/mounts && { 
+grep ^$DEVICE /proc/mounts && {
 	echo "$DEVICE mounted, exiting..."
 	set_uuid
 	exit 1
@@ -42,10 +47,10 @@ mkfs.ext4 -L wibed-overlay ${DEVICE}1 || { echo "Partitioning $DEVICE failed."; 
 sync
 sleep 1
 
+set_fstab_device
 set_uuid
 set_enabled
 
 sleep 5 && block mount
 
 exit 0
-
