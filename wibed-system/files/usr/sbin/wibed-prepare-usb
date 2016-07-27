@@ -4,6 +4,15 @@ DEVICE=${1:-"/dev/sda"}
 
 [ -b $DEVICE ] || { echo "$DEVICE could not be found. Aborting."; exit 1; }
 
+set_fstab_flash_overlay() {
+	flash_mtdblock=$(mount | grep " /overlay" | grep jffs2 | cut -d " " -f 1)
+	if [ -n "$flash_mtdblock"]
+	then
+		uci set fstab.flash_overlay_inactive.device="$flash_mtdblock"
+		uci commit fstab
+	fi
+}
+
 set_fstab_device() {
 	uci set fstab.usb_overlay.device="${DEVICE}1"
 	uci commit fstab
