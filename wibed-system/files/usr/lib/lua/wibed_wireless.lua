@@ -34,6 +34,8 @@ local is_radio_band_2g_only
 local is_radio_band_5g
 local is_radio_band_5g_only
 local is_radio_band_dual
+local is_radio_configured
+local is_radio_enabled
 
 
 
@@ -277,6 +279,27 @@ function is_radio_device(device)
   return wibed_tools.is_item_in_array(device, get_wireless_radio_devices())
 end
 
+-- Check if a wireless device has been already configured in the system ( UCI )
+function is_radio_configured(device)
+  if (uci.get("wireless",device) == "wifi-device") then
+    return true
+  else
+    return false
+  end
+end
+
+function is_radio_enabled(device)
+  print("radio_enabled debug: " .. uci.get("wireless",device,"disabled") )
+  if (is_radio_configured(device)) then
+    if (uci.get("wireless",device,"disabled") == "0") then
+      return true
+    else
+      return false
+    end
+  end
+  return nil
+end
+
 
 
 -- Get a sorted array with the wireless (IEEE 802.11) physical devices (e.g. phy0, phy1, phy2)
@@ -338,5 +361,7 @@ wibed_wireless.is_radio_band_2g_only = is_radio_band_2g_only
 wibed_wireless.is_radio_band_5g = is_radio_band_5g
 wibed_wireless.is_radio_band_5g_only = is_radio_band_5g_only
 wibed_wireless.is_radio_band_dual = is_radio_band_dual
+wibed_wireless.is_radio_configured = is_radio_configured
+wibed_wireless.is_radio_enabled = is_radio_enabled
 
 return wibed_wireless
