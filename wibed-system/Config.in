@@ -25,9 +25,9 @@ menu "Wibed node configuration"
         help
             Specify the root password for the node. Setting a password will, during
             the first boot, disable telnet and enable SSH login.
-    
+
     menu "Management Network Configuration"
-    
+
         config WIBED_SYSTEM_GW
             bool "Gateway node"
             default n
@@ -35,7 +35,7 @@ menu "Wibed node configuration"
                 Choose whether the node will be a gateway node. Gateway nodes are connected
                 to an Internet up-link and share the connection among the rest of nodes over
                 the mesh management network. Gateway nodes shouldn't be used for experiments.
-        
+
         config WIBED_SYSTEM_MGMT_SSID
             string
             prompt "802.11s management network SSID"
@@ -53,7 +53,26 @@ menu "Wibed node configuration"
                 Specify the BSSID of the Ad-Hoc management mesh network. All nodes in the
                 same testbed must have the same Ad-Hoc BSSID to be able to create the
                 management network.
-    
+
+        config WIBED_SYSTEM_MGMT_CHANNEL2
+            string
+            prompt "Ad-Hoc management network 2.4 GHz Channels"
+            default "6"
+            help
+                Specify the 2.4 GHz channels to be used in the Ad-Hoc management mesh network.
+                They should be separated by spaces and will be assigned to wireless interfaces in the
+                specified order
+
+        config WIBED_SYSTEM_MGMT_CHANNEL5
+            string
+            prompt "Ad-Hoc management network 5 GHz Channels"
+            default "40+"
+            help
+                Specify the 5 GHz channels to be used in the Ad-Hoc management mesh network.
+                They should be separated by spaces and will be assigned to wireless interfaces in the
+                specified order
+
+
     endmenu
 
 endmenu

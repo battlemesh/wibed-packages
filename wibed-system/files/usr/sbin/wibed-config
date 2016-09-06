@@ -5,6 +5,9 @@ local fs  = require "nixio.fs"
 local uci = require "uci"
 local iw  = require "iwinfo"
 local util = require "util"
+local wibed_wireless = require "wibed_wireless"
+local wibed_tools = require "wibed_tools"
+local ubus = require "ubus"
 local ucic = "wibed"
 local ucil = "libremap"
 local x = uci:cursor()
@@ -81,7 +84,7 @@ local function generate_address()
 	local ipv6_template = assert(x:get(ucic, "management", "ipv6_net"))
 
 	return ipv4_template:gsub("R1", r1):gsub("R2", r2),
-	       ipv6_template:gsub("R1", hex(r1)):gsub("R2", hex(r2)) 
+	       ipv6_template:gsub("R1", hex(r1)):gsub("R2", hex(r2))
 -- XXX: id should be hex coded but for backwards compat keep it decimal
 end
 
@@ -152,7 +155,7 @@ local function split_ifaces(ifaces)
 	local et = {}
 	local wi = {}
 	local valid_ifaces = {}
-	
+
 	for _,iface in ipairs(ifaces) do
 		-- split by / and get the first existing iface
 		local ifaces_t = iface:split_str("/")
@@ -204,7 +207,7 @@ local function set_mgmt_net()
 	local ifaces,_ = split_ifaces(x:get(ucic, "management", "ifaces"))
 	local _,i
 	for _,i in ipairs(ifaces) do print("-> Interface "..i) end
-	
+
 	table.insert(ifaces,"bat0")
 	local ipv4, ipv6 = generate_address()
 
@@ -216,7 +219,7 @@ local function set_mgmt_net()
 	x:set("network", "mgmt", "ip6addr", ipv6)
 	x:set("network", "mgmt", "ifname", ifaces)
 end
-	
+
 local function set_mgmt_lan()
 	if x:get("wibed","management","is_gw") == "1" then
 		print("Configuring node as Internet gateway...")
@@ -229,19 +232,19 @@ local function set_mgmt_lan()
 		x:set("network", "mgmt_lan", "ipaddr", ipv4)
 		x:set("network", "mgmt_lan", "netmask", "255.255.255.0")
 		x:set("network", "mgmt_lan", "ifname", "br-mgmt")
-	
+
 		x:set("dhcp","mgmt_lan","dhcp")
 		x:set("dhcp","mgmt_lan","interface","mgmt_lan")
 		x:set("dhcp","mgmt_lan","start","2")
 		x:set("dhcp","mgmt_lan","limit","250")
 		x:set("dhcp","mgmt_lan","leasetime","1h")
-		
+
 		x:foreach("firewall", "zone", function(s)
 			if x:get("firewall",s[".name"],"name") == "lan" then
 				 x:set("firewall",s[".name"],"network",{"mgmt_lan"})
 			end
 		end)
-        
+
         -- Disable uneccesary default firewall rules
         local bool = 0
         x:foreach("firewall","rule",function(s)
@@ -271,7 +274,7 @@ local function set_mgmt_lan()
 		x:set("network", "mgmt_lan", "proto", "dhcp")
 		x:set("network", "mgmt_lan", "ifname", "br-mgmt")
 	end
-	
+
 	x:foreach("firewall", "zone", function(s) x:set("firewall", s[".name"],"input","ACCEPT") end)
 	x:foreach("firewall", "zone", function(s) x:set("firewall", s[".name"],"output","ACCEPT") end)
 	x:foreach("firewall", "zone", function(s) x:set("firewall", s[".name"],"forward","ACCEPT") end)
@@ -318,100 +321,226 @@ local function exec_hooks()
 	end
 end
 
+
+-- Get an array with the radios that meet the given criteria
+local function get_radios_for_criteria (crit)
+  return wibed_wireless.get_radios_band(crit)
+end
+
+-- Get an array with available radios that meet the given criteria
+local function get_radios_free_for_criteria (crit, confradios)
+  local cradios = get_radios_for_criteria(crit)
+  local fradios = {}
+  for k,v in pairs(cradios) do
+    if not wibed_tools.is_item_in_array(v, confradios) then
+    table.insert(fradios, v)
+    end
+  end
+  return fradios
+end
+--[[ Configures a radio with the specified settings
+radio: radio device to configure (e.g. radio0)
+crit: specifies if the radio will be configured in 2.4GHz or 5GHz
+ch: the wireless channel to be configured. It may specify if want to use HT mode, e.g. 40+
+twpower: Transmission power
+countrycode: Country code to use while configuring the radio
+mrate: Multi Cast Rate Limit
+proto: Specifies the L2 mgmt protocol, can be "adhoc" that configures batman-adv, or
+"mesh", that uses 802.11s
+wifi_num: Specifies the number of the management network. Auto increment it for each radio configured.
+
+
+--]]
+local function configure_radio (radio, crit, ch, txpower,countrycode,mrate,proto,wifi_num)
+  local id = string.format("mgmt%d", wifi_num)
+  local net = "bat"..id
+  if iw.type(radio) then
+    local ht = ch:match("[-+]?$")
+    printf("-> Using channel %s for %dGHz %s", ch, crit=="5g" and 5 or 2, radio)
+    x:set("wireless", radio, "channel", (ch:gsub("[-+]$", "")))
+
+    x:set("wireless", radio, "disabled", 0)
+
+    if x:get("wireless", radio, "ht_capab") then
+      if ht == "+" or ht == "-" then
+        x:set("wireless", radio, "htmode", "HT40"..ht)
+      else
+        x:set("wireless", radio, "htmode", "HT20")
+      end
+    end
+
+    x:set("wireless", radio, "txpower", txpower)
+    printf("-> Using txpower %s for %dGHz", txpower, crit=="5g" and 5 or 2)
+    if countrycode ~= nil then
+      x:set("wireless", radio, "country", countrycode)
+      printf("-> Using countrycode %s", countrycode)
+    end
+    if mrate ~= nil then
+      x:set("wireless", radio, "mcast_rate", mrate)
+      printf("-> Using multicast rate %s", mrate)
+    end
+
+    if proto == "adhoc" then
+      printf("-> Chosen batman-adv for L2 mgmt protocol")
+      x:set("wireless", id, "wifi-iface")
+      x:set("wireless", id, "hidden", 1)
+      x:set("wireless", id, "ssid", generate_ssid())
+      x:set("wireless", id, "bssid", get_bssid())
+      x:set("wireless", id, "device", radio)
+      x:set("wireless", id, "network", net)
+      x:set("wireless", id, "mode", "adhoc")
+      x:set("wireless", id, "ifname", id)
+    elseif proto == "mesh" then
+      printf("-> Chosen 802.11s for L2 mgmt protocol")
+      if x:get("wireless",radio,"type") ~= "mac80211" then
+        printf("-> Error, device %s does not support 802.11s", radio)
+        error()
+      end
+      x:set("wireless", id, "wifi-iface")
+      x:set("wireless", id, "hidden", 1)
+      x:set("wireless", id, "device", radio)
+      x:set("wireless", id, "ssid", generate_ssid())
+      x:set("wireless", id, "network", net)
+      x:set("wireless", id, "mode", "mesh")
+      x:set("wireless", id, "mesh_id", get_ssid())
+      x:set("wireless", id, "mesh_fwding", 0)
+      x:set("wireless", id, "ifname", id)
+    end
+    set_batadv(id)
+  else
+    printf("-> Error, device %s not found as WiFi interface", radio)
+  end
+end
+
 local function set_mgmt_wifi()
 	print("Configuring management wifi devices")
-	local channel5 = assert(x:get(ucic, "management", "channel5"))
-	local txpower2 = x:get(ucic, "management", "txpower2") or "30"
+	-- local channel5 = assert(x:get(ucic, "management", "channel5"))
+  local txpower2 = x:get(ucic, "management", "txpower2") or "30"
 	local txpower5 = x:get(ucic, "management", "txpower5") or "20"
 	local mrate = x:get(ucic, "management", "mrate") or nil
 	local countrycode = x:get(ucic, "management", "country") or nil
-	local channel2 = assert(x:get(ucic, "management", "channel2"))
+	-- local channel2 = assert(x:get(ucic, "management", "channel2"))
 	local i,_
 	local _,ifaces = split_ifaces(x:get(ucic, "management", "ifaces"))
 	local wifi_num = 0
-    local proto = x:get(ucic,"management","l2proto") or "adhoc"
+  local proto = x:get(ucic,"management","l2proto") or "adhoc"
 
-	for _,i in ipairs(ifaces) do
-		print("-> Interface " .. i)
-		local id = string.format("mgmt%d", wifi_num)
-		local net = "bat"..id
+  local channel2 = wibed_tools.list_to_array(assert(x:get(ucic, "management", "channel2")))
+  local channel5 = wibed_tools.list_to_array(assert(x:get(ucic, "management", "channel5")))
 
-		local t = iw.type(i)
-		if t then
-			local is_5ghz = iw[t].hwmodelist(i).a
+  --[[ Wireless configuration criteria
+    -- 1) Configure 2,4G only device with the first 2g channel
+    -- 2) Configure 2,4G only device with the first 5g channel
+    -- 3) Configure dual devices with 2,4g and 5g alternative ( or main ) channels,
+          priorize 2,4G
+  ]]
 
-			if is_5ghz then ch=channel5
-			else  ch=channel2 end
+  local confradios = {}
 
-			if not ch then
-				printf("-> No channel defined for %dGHz %s", is_5ghz and 5 or 2, i)
-				return
-			end
+  local conf_radios_2g = 0
+  local conf_radios_5g = 0
 
-			local ht = ch:match("[-+]?$")
 
-			printf("-> Using channel %s for %dGHz %s", ch, is_5ghz and 5 or 2, i)
-			x:set("wireless", i, "channel", (ch:gsub("[-+]$", "")))
+--[[
+  -- wait for network.wireless to appear in ubus // timeout 60 seconds
+  timeout = 60
+  conn = ubus.connect()
+  while (timeout >= 0 ) and not wibed_tools.is_item_in_array("network.wireless",conn:objects()) do
+    os.execute("sleep 1")
+    timeout = timeout - 1
+  end
 
-			if x:get("wireless", i, "ht_capab") then
-				if ht == "+" or ht == "-" then
-					x:set("wireless", i, "htmode", "HT40"..ht)
-				else
-					x:set("wireless", i, "htmode", "HT20")
-				end
-			end
+  print("Value of timeout when the waiting has finished:" .. timeout)
+  --]]
 
-			x:set("wireless", i, "disabled", 0)
-			if is_5ghz then
-				x:set("wireless", i, "txpower", txpower5)
-				printf("-> Using txpower %s for 5GHz", txpower5)
-			else
-				x:set("wireless", i, "txpower", txpower2)
-				printf("-> Using txpower %s for 2GHz", txpower2)
-			end
-			if countrycode ~= nil then
-				x:set("wireless", i, "country", countrycode)
-				printf("-> Using countrycode %s", countrycode)
-			end
-			if mrate ~= nil then
-				x:set("wireless", i, "mcast_rate", mrate)
-				printf("-> Using multicast rate %s", mrate)
-			end
+  local conf = true
+  -- When there are channels available to be configured to not yet configured radios, try to configure them
+  while conf and ( conf_radios_2g < #channel2 or conf_radios_5g < #channel5 ) do
+    conf = false
+    local possradios2g = ( conf_radios_2g < #channel2 ) and
+     get_radios_free_for_criteria ("2g", confradios) or nil
+    local possradios5g = ( conf_radios_5g < #channel5 ) and
+     get_radios_free_for_criteria ("5g", confradios) or nil
+    local possradios = nil
+    print("Debug info....")
+    print("Radios found")
+    if (possradios2g) then
+      print("==========2.4GHz==========")
+      for _,i in pairs(possradios2g) do
+        print ("Radio " .. i)
+      end
+    end
+    if (possradios5g) then
+      print("==========5GHz==========")
+      for _,i in pairs(possradios5g) do
+        print ("Radio " .. i)
+      end
+    end
+    print("Radios configured")
+    print("2.4GHz conf radios: ".. conf_radios_2g)
+    print("5GHz conf radios: ".. conf_radios_5g)
+    print("2.4GHz available channels:" .. #channel2)
+    print("5GHz available channels:" .. #channel5)
 
-            if proto == "adhoc" then
-                printf("-> Chosen batman-adv for L2 mgmt protocol")
-			    x:set("wireless", id, "wifi-iface")
-			    x:set("wireless", id, "hidden", 1)
-			    x:set("wireless", id, "ssid", generate_ssid())
-			    x:set("wireless", id, "bssid", get_bssid())
-			    x:set("wireless", id, "device", i)
-			    x:set("wireless", id, "network", net)
-			    x:set("wireless", id, "mode", "adhoc")
-			    x:set("wireless", id, "ifname", id)
-			elseif proto == "mesh" then
-                printf("-> Chosen 802.11s for L2 mgmt protocol")
-			    if x:get("wireless",i,"type") ~= "mac80211" then
-			        printf("-> Error, device %s does not support 802.11s", i)
-                    error()
-                end
-			    x:set("wireless", id, "wifi-iface")
-			    x:set("wireless", id, "hidden", 1)
-			    x:set("wireless", id, "device", i)
-			    x:set("wireless", id, "ssid", generate_ssid())
-			    x:set("wireless", id, "network", net)
-			    x:set("wireless", id, "mode", "mesh")
-			    x:set("wireless", id, "mesh_id", get_ssid())
-			    x:set("wireless", id, "mesh_fwding", 0)
-			    x:set("wireless", id, "ifname", id)
-            end
 
-			set_batadv(id)
+    if (possradios2g and possradios5g) then
+      if ( conf_radios_5g - conf_radios_2g >= 0 ) then
+        crit = "2g"
+      else
+        crit = "5g"
+      end
+    elseif possradios2g then
+      crit = "2g"
+    elseif possradios5g then
+      crit = "5g"
+    end
+    if crit then
+      possradios = crit == "2g" and possradios2g or possradios5g
+    end
 
-			wifi_num = wifi_num + 1
-		else
-			printf("-> Error, device %s not found as WiFi interface", i)
-		end
-	end
+    for ak, av in pairs(possradios) do
+      print ("Candidates: " .. av)
+    end
+
+    local selradio = nil
+
+    if table.getn(possradios) == 1 then
+      selradio = possradios[1]
+    elseif table.getn(possradios) >= 1 then
+      for l, m in pairs(possradios) do
+        if wibed_wireless.is_radio_band(m,crit) then
+          print(m .. "is band " .. crit)
+        end
+        if wibed_wireless.is_radio_band_dual(m) then
+          print(m .. "is dual band.")
+        end
+        if selradio == nil and wibed_wireless.is_radio_band(m,crit) and not wibed_wireless.is_radio_band_dual(m) then
+          selradio = m
+        end
+      end
+    else
+      print("No radios to configure")
+    end
+
+    if selradio == nil and table.getn(possradios) >= 1 then
+      selradio = possradios[1]
+    end
+
+    if selradio ~= nil then
+      print ("Selected: " .. selradio)
+      table.insert(confradios, selradio)
+      conf = true
+      local txpower = ( crit == "5g" and txpower5 or txpower2 )
+      local ch = ( crit == "5g" and channel5[conf_radios_5g+1] or channel2[conf_radios_2g+1] )
+      configure_radio(selradio, crit, ch,txpower,countrycode,mrate,proto,wifi_num)
+      wifi_num = wifi_num + 1
+      if (crit == "2g") then
+        conf_radios_2g = conf_radios_2g + 1
+      else
+        conf_radios_5g = conf_radios_5g + 1
+      end
+    end
+  end
 end
 
 function set_location()
