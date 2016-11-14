@@ -160,6 +160,24 @@ function writeFile(filePath, content)
     file:close()
 end
 
+
+-- Function: writeToCommand
+--
+-- Writes the provided content to the specified command using a pipe (popen).
+--
+-- Params:
+-- * command - The command to write to ( writes to stdin ).
+-- * content - The content to write.
+function writeToCommand(command, content)
+	if not content then
+        	content = ""
+	end
+	local file = assert(io.popen(command, "w"))
+	assert(file:write(content))
+	file:close()
+end
+
+
 -- Function: executeCommand
 --
 -- Executes a shell command returning the status code
@@ -297,7 +315,7 @@ function uciSetInOverlays(config, section, option, value, overlay)
         print("Something went terribly wrong")
         os.exit(1)
     end
-    
+
     for _, dir in ipairs(overlays) do
         local confdir = dir .. "/etc/config"
         local savedir = "/tmp/.uci/" .. dir
@@ -384,9 +402,9 @@ end
 
 -- Function: sendError
 --
--- Send error info to the server 
+-- Send error info to the server
 function sendError()
-    -- Create tar.gz file from the result files 
+    -- Create tar.gz file from the result files
     _, exp = executeCommand(string.format("wibed-getlogs"))
     -- Transfer tar.gz file to the server and then delete it
     local c = cURL.easy_init()
@@ -413,10 +431,10 @@ end
 -- * version - New firmware version.
 -- * hash - The hash of the new firmware.
 -- * upgradeTime - The time at which to make the upgrade.
-function doPrepareFirmwareUpgrade(version, hash, upgradeTime) 
+function doPrepareFirmwareUpgrade(version, hash, upgradeTime)
     print(string.format("Fetching firmware upgrade at %s", upgradeTime))
-    success, statusCode, _, _ = http.request{ 
-        url = string.format("%s/static/firmwares/%s",apiUrl, version), 
+    success, statusCode, _, _ = http.request{
+        url = string.format("%s/static/firmwares/%s",apiUrl, version),
         sink = ltn12.sink.file(io.open("/tmp/wibed.bin", 'w'))
     }
 
@@ -437,7 +455,7 @@ end
 --
 -- Start the firmware upgrade process.
 --
-function doFirmwareUpgrade() 
+function doFirmwareUpgrade()
 	print(string.format("Attempting firmware upgrade"))
 	local oldVersion = readVariable("upgrade.version") or nil
 	local upVersion = readFile("/root/wibed.upgrade.version") or nil
@@ -449,7 +467,7 @@ function doFirmwareUpgrade()
 		sendError()
 		return 1
 	end
-	
+
 	-- Execute the upgrade script
 	print(string.format("Executing the upgrade script"))
 	local exitCode, _ = executeCommand(string.format("/usr/sbin/wibed-upgrade %s %s" , upVersion, hash ))
@@ -464,21 +482,21 @@ end
 
 -- Function: doPrepareExperiment
 --
--- Prepares an experiment by downloading the respective overlay and 
+-- Prepares an experiment by downloading the respective overlay and
 -- installing it.
 --
 -- Params:
 -- * experimentId - The id of the experiment.
 -- * overlayId - The id of the overlay used in the experiment.
 -- * overlayHash - The hash of the overlay.
-function doPrepareExperiment(experimentId, overlayId, overlayHash) 
+function doPrepareExperiment(experimentId, overlayId, overlayHash)
     status = PREPARING
     writeVariable("general.status", status)
 
     executeCommand(string.format("rm -rf %s/*", MNT_USB_OVERLAY))
 
-    success, statusCode, _, _ = http.request{ 
-        url = string.format("%s/static/overlays/%s",apiUrl, overlayId), 
+    success, statusCode, _, _ = http.request{
+        url = string.format("%s/static/overlays/%s",apiUrl, overlayId),
         sink = ltn12.sink.file(io.open(string.format("%s/overlay.tar.gz", MNT_USB_OVERLAY), "w"))
     }
 
@@ -490,7 +508,7 @@ function doPrepareExperiment(experimentId, overlayId, overlayHash)
         executeCommand(string.format("rm -f %s/etc/.extroot-uuid 2>/dev/null",MNT_USB_OVERLAY))
         --executeCommand(string.format("rm -rf %s/etc/uci-defaults 2>/dev/null",MNT_USB_OVERLAY))
         executeCommand(string.format("tar -xhzf %s/overlay.tar.gz -C %s",MNT_USB_OVERLAY, MNT_USB_OVERLAY))
-		
+
         status = READY
         writeVariable("general.status", status)
         writeVariable("experiment.exp_id", experimentId)
@@ -517,9 +535,9 @@ end
 
 -- Function: saveResults
 --
--- Send the results in /save folder to the server 
+-- Send the results in /save folder to the server
 function saveResults()
-    -- Create tar.gz files from the result files 
+    -- Create tar.gz files from the result files
     _, exp = executeCommand(string.format("ID=`uci get wibed.experiment.exp_id` && tar -cvzf /root/${ID}.tar.gz -C /save/ . &&  rm -rf /save/* && echo $ID"))
     -- Transfer tar.gz file to the server and then delete it
     local c = cURL.easy_init()
@@ -552,9 +570,9 @@ function doFinishExperiment()
         uciSetInOverlays("wibed", "general", "status", status, "USB")
         -- Change  future status to flash overlay as IDLE
         uciSetInOverlays("wibed", "general", "status", IDLE, "FLASH")
-    
+
         saveResults()
-    
+
         executeCommand(string.format("sleep %d && reboot -f &", REBOOT_DELAY))
 
     else
@@ -599,9 +617,12 @@ function executeCommands(commands)
         print(string.format("Executing command %d \"%s\"", commandId, commandStr))
         --This doesn't work so we have to hack a lil bit
         --writeFile(COMMANDS_PIPE, "%d %s" % {commandId, commandStr})
-        exitCode,stdout = executeCommand(string.format("echo \"%d %s\" > \"%s\"", commandId, commandStr, COMMANDS_PIPE), false)
-        print(exitCode)
-        print(stdout)
+        -- This was a little hacky, changed it so lua writes directly to the pipe
+        -- instead of using echo to do so
+        --exitCode,stdout = executeCommand(string.format("echo \"%d %s\" > \"%s\"", commandId, commandStr, COMMANDS_PIPE), false)
+        --print(exitCode)
+        --print(stdout)
+        pwriteFile("cat > "..COMMANDS_PIPE, "%d %s" % {commandId, commandStr} .. "\n")
         lastCommandId = commandId
     end
 
@@ -629,7 +650,7 @@ function getMgmtAddress()
 end
 
 -- Function: sendRestore
--- 
+--
 -- Sends restore command to the specified nodeid through alfred
 -- may be a simple reboot or reset with commands preexecution (if in experiment)
 -- Parameters: nodeid (id of the node to restore); reset (signal to reexecute previous commands)
@@ -712,7 +733,7 @@ elseif status == IDLE or status == RUNNING or status == ERROR then
         request["results"] = buildResults()
         request["commandAck"] = commandAck
     end
-    
+
     -- Sending gateway & node ACK to the server (for sendRestore process)
     --
     local _, gwack = executeCommand(string.format("uci -q get wibed.temp.gwack"))
@@ -734,10 +755,10 @@ print(" ")
 print("Request:")
 print(jsonEncodedRequest)
 print(" ")
-    
 
-responseBody, statusCode, _, _ = http.request( 
-    string.format("%s/api/wibednode/%s", apiUrl, id), 
+
+responseBody, statusCode, _, _ = http.request(
+    string.format("%s/api/wibednode/%s", apiUrl, id),
     jsonEncodedRequest)
 
 if responseBody and statusCode == 200 then
@@ -756,7 +777,7 @@ if responseBody and statusCode == 200 then
         os.exit(1)
     end
 
-    -- Migration from init to idle is automatic upon receival of 
+    -- Migration from init to idle is automatic upon receival of
     -- response by server
     if status == INIT then
         -- Except the case that an upgrade was performed incorrectly
@@ -793,7 +814,7 @@ if responseBody and statusCode == 200 then
         local upgrade = response["upgrade"]
         local experiment = response["experiment"]
         if upgrade then
-            doPrepareFirmwareUpgrade(upgrade["version"], 
+            doPrepareFirmwareUpgrade(upgrade["version"],
                               upgrade["hash"],
                               upgrade["utime"])
         elseif experiment and experiment["action"] == "PREPARE" then
@@ -809,7 +830,7 @@ if responseBody and statusCode == 200 then
             sendRestore(sendrestore["dest"],sendrestore["reset"])
         end
 
-    elseif response["experiment"] and status >= PREPARING 
+    elseif response["experiment"] and status >= PREPARING
                                   and status <= RUNNING then
         if response["experiment"]["action"] == "FINISH" then
             doFinishExperiment()
@@ -835,7 +856,7 @@ if responseBody and statusCode == 200 then
     -- writeVariable("general.status", status)
     if mountedOverlay == FLASH then
         uciSetInOverlays("wibed", "general", "status", status, "FLASH")
-    else 
+    else
         uciSetInOverlays("wibed", "general", "status", status, "USB")
     end
 
@@ -846,4 +867,3 @@ end
 -- Release the lock
 --
 --os.execute(string.format("lock -u /tmp/wibed-node-lock"))
-
