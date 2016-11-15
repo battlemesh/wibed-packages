@@ -622,7 +622,7 @@ function executeCommands(commands)
         --exitCode,stdout = executeCommand(string.format("echo \"%d %s\" > \"%s\"", commandId, commandStr, COMMANDS_PIPE), false)
         --print(exitCode)
         --print(stdout)
-        pwriteFile("cat > "..COMMANDS_PIPE, "%d %s" % {commandId, commandStr} .. "\n")
+        writeToCommand("cat > "..COMMANDS_PIPE, "%d %s" % {commandId, commandStr} .. "\n")
         lastCommandId = commandId
     end
 
