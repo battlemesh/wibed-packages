@@ -6,7 +6,7 @@
 for device in /dev/sd?; do
     if [ -b $device ]; then
       dev=${device#"/dev/"}
-      if ! grep ATA /sys/block/$dev/device/vendor && grep 1 /sys/block/$dev/removable;then
+      if ! grep -w ATA /sys/block/$dev/device/vendor && grep 1 /sys/block/$dev/removable;then
         #blkid -t LABEL=wibed-overlay ${device}1 >/dev/null && continue
         echo "Running wibed-prepare-usb $device"
         wibed-prepare-usb $device >/root/wibed-prepare-usb.log

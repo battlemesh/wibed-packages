@@ -425,8 +425,10 @@ local function set_mgmt_wifi()
 	local wifi_num = 0
   local proto = x:get(ucic,"management","l2proto") or "adhoc"
 
-  local channel2 = wibed_tools.list_to_array(assert(x:get(ucic, "management", "channel2")))
-  local channel5 = wibed_tools.list_to_array(assert(x:get(ucic, "management", "channel5")))
+  local channel2 = wibed_tools.list_to_array(x:get(ucic, "management", "channel2"))
+  local channel5 = wibed_tools.list_to_array(x:get(ucic, "management", "channel5"))
+
+  assert(channel2 or channel5,"There are no wireless channels set to be configured")
 
   --[[ Wireless configuration criteria
     -- 1) Configure 2,4G only device with the first 2g channel
