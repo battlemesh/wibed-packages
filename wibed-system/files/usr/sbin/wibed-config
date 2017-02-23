@@ -143,6 +143,7 @@ local function reset_wifi()
 	os.execute("cp -f /etc/config/wireless /tmp/wireless.backup")
 	os.execute('echo "" > /etc/config/wireless')
 	os.execute('wifi detect > /etc/config/wireless')
+    os.execute('wifi config')
 end
 
 local function wifi_up()
