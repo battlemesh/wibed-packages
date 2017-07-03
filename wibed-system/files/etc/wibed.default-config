@@ -47,3 +47,4 @@ config wibed management
     option txpower5 '18'
     option mrate '6000'							# Multicast Rate for the management wifi network
     option is_gw '0'							# Set to 1 if the node is acting as gateway
+    #option country 'ES'                         # Set the countrycode to be configured in wireless devices. Don't set it to configure driver default.
